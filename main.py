@@ -206,7 +206,8 @@ def determine_position_changes(current_positions, desired_positions):
 
     for stock in stocks:
         if stock not in desired_positions.keys():
-            sell[stock] = current_positions[stock]
+            if current_positions[stock] != 0.0:
+                sell[stock] = current_positions[stock]
         elif stock not in current_positions.keys():
             buy[stock] = desired_positions[stock]
         else:
