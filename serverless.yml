@@ -21,6 +21,10 @@ provider:
         - "dynamodb:GetItem"
         - "dynamodb:PutItem"
       Resource: "arn:aws:dynamodb:*:*:table/${self:provider.environment.PORTFOLIO_TABLE_NAME}"
+    - Effect: "Allow"
+      Action:
+        - "sns:Publish"
+      Resource: "arn:aws:sns:*:*:algotrading-*"
 
 functions:
   run:
@@ -40,6 +44,39 @@ resources:
           - AttributeName: "accountHash"
             KeyType: "HASH"
         BillingMode: PAY_PER_REQUEST
+    AlarmTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.alerts.topics.alarm.topic}
+    AlarmTopicSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: email
+        Endpoint: your-email@example.com # Replace with your email address
+        TopicArn:
+          Ref: AlarmTopic
+
+custom:
+  alerts:
+    topics:
+      alarm:
+        topic: algotrading-${self:provider.region}-lambda-errors
+        notifications:
+          - protocol: email
+            endpoint: algotradingrunneralerts@jonathandamico.me # Replace with your email address
+    definitions:
+      lambdaFunctionErrors:
+        description: 'Lambda function errors'
+        namespace: 'AWS/Lambda'
+        metric: Errors
+        threshold: 1
+        statistic: Sum
+        period: 60 # 60 seconds
+        evaluationPeriods: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+    alarms:
+      - lambdaFunctionErrors
 
 plugins:
   - serverless-python-requirements
+  - serverless-plugin-aws-alerts

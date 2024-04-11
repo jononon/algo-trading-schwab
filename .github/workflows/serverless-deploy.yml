@@ -24,6 +24,7 @@ jobs:
           pip install -r requirements.txt
           npm install -g serverless
           serverless plugin install -n serverless-python-requirements
+          serverless plugin install -n serverless-plugin-aws-alerts
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
