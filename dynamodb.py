@@ -30,7 +30,7 @@ def get_portfolio(account_hash):
     if item:
         return {
             "cash": float(item["cash"]),
-            "positions": float(item["positions"])
+            "positions": {k: float(v) for k, v in item["positions"].items()}
         }
     else:
         raise Exception("No portfolio found in dynamodb")
