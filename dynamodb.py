@@ -11,8 +11,8 @@ def store_portfolio(account_hash, portfolio):
     table.put_item(
        Item={
             'accountHash': account_hash,
-            'cash': Decimal(str(portfolio["cash"])),
-            'positions': {k: Decimal(str(v)) for k, v in portfolio["positions"].items()}
+            'cash': portfolio["cash"],
+            'positions': portfolio["positions"]
         }
     )
 
@@ -27,8 +27,8 @@ def get_portfolio(account_hash):
 
     if item:
         return {
-            "cash": float(item["cash"]),
-            "positions": {k: float(v) for k, v in item["positions"].items()}
+            "cash": item["cash"],
+            "positions": item["positions"]
         }
     else:
         raise Exception("No portfolio found in dynamodb")
