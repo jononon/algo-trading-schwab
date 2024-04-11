@@ -273,8 +273,8 @@ def run():
     store_portfolio(account_hash, current_portfolio)
 
 def request_handler(event, lambda_context):
-    print("Event: ", event)
-    print("Lambda context: ", lambda_context)
+    logger.info("Event: ", event)
+    logger.info("Lambda context: ", lambda_context)
 
     try:
         run()
@@ -286,11 +286,12 @@ def request_handler(event, lambda_context):
         return response
 
     except Exception as e:
-        print(traceback.format_exc())
+        logger.error(traceback.format_exc())
 
         response = {
             "statusCode": 500,
-            "error": e
+            "error": e,
+            "trace": traceback.format_exc()
         }
 
         return response
