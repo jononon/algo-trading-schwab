@@ -29,7 +29,7 @@ provider:
 functions:
   run:
     handler: main.request_handler
-#    timeout: 900 # 15 minutes
+    timeout: 900 # 15 minutes
 
 resources:
   Resources:
