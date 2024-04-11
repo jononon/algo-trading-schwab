@@ -204,7 +204,7 @@ def get_excecuted_order_value(order_details):
 
 
 def run():
-    account_hash = "7BDF9FB8A3BAD3396DFD3823DD0D7AAC8C2EE35D4A30BAAD4349111DD8D3D133"
+    account_hash = "293B4140772D0B86E322EC9497BBEC6F3203B62AFD5C4B2CF1DC8E10880B5CD0"
 
     desired_stocks = create_strategy()
 
