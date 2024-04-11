@@ -44,17 +44,6 @@ resources:
           - AttributeName: "accountHash"
             KeyType: "HASH"
         BillingMode: PAY_PER_REQUEST
-    AlarmTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        TopicName: ${self:custom.alerts.topics.alarm.topic}
-    AlarmTopicSubscription:
-      Type: AWS::SNS::Subscription
-      Properties:
-        Protocol: email
-        Endpoint: your-email@example.com # Replace with your email address
-        TopicArn:
-          Ref: AlarmTopic
 
 custom:
   alerts:
