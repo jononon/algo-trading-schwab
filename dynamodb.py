@@ -11,7 +11,7 @@ def store_portfolio(account_hash, portfolio):
     table.put_item(
        Item={
             'accountHash': account_hash,
-            'cash': Decimal(portfolio["cash"]),
+            'cash': Decimal(str(portfolio["cash"])),
             'positions': {k: Decimal(str(v)) for k, v in portfolio["positions"].items()}
         }
     )
