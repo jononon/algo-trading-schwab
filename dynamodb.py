@@ -8,12 +8,11 @@ table_name = os.environ['PORTFOLIO_TABLE_NAME']
 table = dynamodb.Table(table_name)
 
 def store_portfolio(account_hash, portfolio):
-    # Example: Put an item
     table.put_item(
        Item={
             'accountHash': account_hash,
             'cash': Decimal(portfolio["cash"]),
-            'positions': {k: Decimal(v) for k, v in portfolio["positions"].items()}
+            'positions': {k: Decimal(str(v)) for k, v in portfolio["positions"].items()}
         }
     )
 
