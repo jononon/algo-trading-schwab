@@ -231,6 +231,9 @@ def run():
     net_cash = 0.0
     for symbol, order_details in order_confirmations:
         if order_details["status"] == "FILLED":
+            if symbol not in current_portfolio["positions"]:
+                current_portfolio["positions"][symbol] = 0
+
             if order_details["orderLegCollection"][0]["instruction"] == "SELL":
                 current_portfolio["positions"][symbol] -= order_details["filledQuantity"]
                 net_cash += get_excecuted_order_value(order_details)
