@@ -154,7 +154,8 @@ def place_limit_order(account_hash: str, symbol: str, quantity: int, limit_price
                 "quantity": quantity
             }
         ],
-        "orderStrategyType": "SINGLE"
+        "orderStrategyType": "SINGLE",
+        "taxLotMethod": "LOSS_HARVESTER"
     })
 
     response = requests.request("POST", url, headers=headers, data=payload)
@@ -192,7 +193,8 @@ def place_market_order(account_hash: str, symbol: str, quantity: int, instructio
                 "quantity": quantity
             }
         ],
-        "orderStrategyType": "SINGLE"
+        "orderStrategyType": "SINGLE",
+        "taxLotMethod": "LOSS_HARVESTER"
     })
 
     response = requests.request("POST", url, headers=headers, data=payload)
