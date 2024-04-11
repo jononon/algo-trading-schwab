@@ -143,6 +143,18 @@ def get_bid_price(current_quotes, stock):
         quote = information["quote"]
         return Decimal(quote["bidPrice"])
 
+def get_last_price(current_quotes, stock):
+    if stock not in current_quotes:
+        logger.warning(f"{stock} NOT IN FETCHED QUOTES")
+    else:
+        information = current_quotes[stock]
+
+        if not information["realtime"]:
+            logger.warning(f"NOT REALTIME QUOTE FOR {stock}")
+
+        quote = information["quote"]
+        return Decimal(quote["lastPrice"])
+
 
 def get_value_of_portfolio(portfolio):
     current_quotes = get_current_quotes(portfolio["positions"].keys())
@@ -150,7 +162,8 @@ def get_value_of_portfolio(portfolio):
     total_value = Decimal(portfolio["cash"])
 
     for symbol, quantity in portfolio["positions"].items():
-        total_value += get_bid_price(current_quotes, symbol) * Decimal(quantity)
+        # use ask price instead of bid price to ensure that we don't arbitrarially sell stocks
+        total_value += get_ask_price(current_quotes, symbol) * Decimal(quantity)
 
     return total_value
 
