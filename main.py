@@ -181,7 +181,7 @@ def determine_position_changes(current_positions, desired_positions):
             quantity_to_buy = desired_positions[stock] - current_positions[stock]
             if quantity_to_buy > 0:
                 buy[stock] = quantity_to_buy
-            else:
+            elif quantity_to_buy < 0:
                 sell[stock] = -quantity_to_buy
 
     return sell, buy
