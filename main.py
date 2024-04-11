@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import time
 import traceback
 import logging
+import copy
 
 from schwab import get_price_history, get_accounts, get_orders, cancel_order, get_current_quotes, get_account, place_market_order, get_order
 from dynamodb import get_portfolio, store_portfolio
@@ -153,6 +154,23 @@ def get_value_of_portfolio(portfolio):
     return total_value
 
 
+def allocate_remaining_amount(current_quotes, desired_positions, amount_to_spend):
+    best_desired_positions = desired_positions
+    best_amount_to_spend = amount_to_spend
+    for symbol in desired_positions.keys():
+        price = get_ask_price(current_quotes, symbol)
+        if price < amount_to_spend:
+            new_desired_positions = copy.deepcopy(desired_positions)
+            new_desired_positions[symbol] += 1
+
+            further_desired_positions, further_amount_to_spend = allocate_remaining_amount(current_quotes, new_desired_positions, amount_to_spend - price)
+
+            if further_amount_to_spend < best_amount_to_spend:
+                best_desired_positions = further_desired_positions
+                best_amount_to_spend = further_amount_to_spend
+
+    return best_desired_positions, best_amount_to_spend
+
 def determine_desired_positions(stocks, amount_to_spend):
     current_quotes = get_current_quotes(stocks)
 
@@ -160,8 +178,16 @@ def determine_desired_positions(stocks, amount_to_spend):
 
     amount_per_stock = amount_to_spend / len(stocks)
 
+    amount_spent = 0.0
     for symbol in stocks:
-        desired_positions[symbol] = amount_per_stock // get_ask_price(current_quotes, symbol)
+        price = get_ask_price(current_quotes, symbol)
+
+        quantity = amount_per_stock // price
+
+        desired_positions[symbol] = quantity
+        amount_spent += price * quantity
+
+    allocate_remaining_amount(current_quotes, desired_positions, amount_to_spend - amount_spent)
 
     return desired_positions
 
@@ -271,6 +297,7 @@ def run():
     logger.info(f"New portfolio: {current_portfolio}")
 
     store_portfolio(account_hash, current_portfolio)
+
 
 def request_handler(event, lambda_context):
     logger.info(f"Event: {event}")
