@@ -1,0 +1,268 @@
+from datetime import datetime, timedelta
+import time
+import traceback
+
+from schwab import get_price_history, get_accounts, get_orders, cancel_order, get_current_quotes, get_account, place_market_order, get_order
+from dynamodb import get_portfolio, store_portfolio
+
+
+def create_strategy():
+    data = {
+        "AGG": get_price_history("AGG"),
+        "BIL": get_price_history("BIL"),
+        "SOXL": get_price_history("SOXL"),
+        "TQQQ": get_price_history("TQQQ"),
+        "UPRO": get_price_history("UPRO"),
+        "TECL": get_price_history("TECL"),
+        "TLT": get_price_history("TLT"),
+        "QID": get_price_history("QID"),
+        "TBF": get_price_history("TBF"),
+    }
+
+    if calculate_cumulative_return(data["AGG"], 60) > calculate_cumulative_return(data["BIL"], 60):
+        print("RISK ON")
+        options = ["SOXL", "TQQQ", "UPRO", "TECL"]
+        strengths = [(stock, calculate_relative_strength_index(data[stock], 10)) for stock in options]
+        sorted_stocks = sorted(strengths, key=lambda x: x[1])
+        top_two_stocks = sorted_stocks[:2]
+        print(f"Top two stocks: {top_two_stocks}")
+        return [x[0] for x in top_two_stocks]
+    else:
+        if calculate_cumulative_return(data["TLT"], 20) < calculate_cumulative_return(data["BIL"], 20):
+            print("RISK OFF, RISING RATES")
+            options = ["QID", "TBF"]
+            strengths = [(stock, calculate_relative_strength_index(data[stock], 20)) for stock in options]
+            sorted_stocks = sorted(strengths, key=lambda x: x[1])
+            top_stock = sorted_stocks[0]
+            print(f"UUP, {top_stock}")
+            return ["UUP", top_stock[0]]
+        else:
+            print("UGL, TMF, BTAL, XLP")
+            return ["UGL, TMF, BTAL, XLP"]
+
+
+def calculate_moving_average(data, days):
+    # Sort the data by datetime in descending order
+    data.sort(key=lambda x: x['datetime'], reverse=True)
+
+    # Initialize the total
+    total = 0
+
+    # Iterate over the first 'days' elements
+    for i in range(days):
+        total += data[i]['close']
+
+    # Calculate and return the average
+    return total / days
+
+
+def calculate_relative_strength_index(data, days):
+    # Sort the data by datetime in descending order
+    data.sort(key=lambda x: x['datetime'], reverse=True)
+
+    # Calculate daily price changes for the last 'days' days
+    price_changes = [data[i]['close'] - data[i + 1]['close'] for i in range(days)]
+
+    # Separate gains and losses
+    gains = [change for change in price_changes if change > 0]
+    losses = [-change for change in price_changes if change < 0]
+
+    # Calculate average gain and average loss
+    avg_gain = sum(gains) / days if gains else 0
+    avg_loss = sum(losses) / days if losses else 0
+
+    # Calculate and return the RS
+    relative_strength = avg_gain / avg_loss if avg_loss != 0 else 0
+
+    return 100 - (100 / (1 + relative_strength))
+
+
+def calculate_cumulative_return(data, days):
+    # Sort the data by datetime in descending order
+    data.sort(key=lambda x: x['datetime'], reverse=True)
+
+    # Get the closing price for the first day and the 'days'th day
+    price_current = data[0]['close']
+    price_n_days_ago = data[days-1]['close'] if len(data) > days-1 else data[-1]['close']
+
+    # Calculate and return the cumulative return
+    return (price_current - price_n_days_ago) / price_n_days_ago
+
+
+def format_time_schwab(time_obj):
+    return time_obj.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
+
+def cancel_outstanding_orders(account_hash: str):
+    now = datetime.utcnow()
+    yesterday = now - timedelta(days=1)
+
+    from_time = format_time_schwab(yesterday)
+    to_time = format_time_schwab(now)
+
+    orders = get_orders(account_hash, from_time, to_time)
+
+    for order in orders:
+        if order["cancelable"]:
+            cancel_order(account_hash, order["orderId"])
+
+
+def get_ask_price(current_quotes, stock):
+    if stock not in current_quotes:
+        print(f"{stock} NOT IN FETCHED QUOTES")
+    else:
+        information = current_quotes[stock]
+
+        if not information["realtime"]:
+            print(f"NOT REALTIME QUOTE FOR {stock}")
+
+        quote = information["quote"]
+        return quote["askPrice"]
+
+
+def get_bid_price(current_quotes, stock):
+    if stock not in current_quotes:
+        print(f"{stock} NOT IN FETCHED QUOTES")
+    else:
+        information = current_quotes[stock]
+
+        if not information["realtime"]:
+            print(f"NOT REALTIME QUOTE FOR {stock}")
+
+        quote = information["quote"]
+        return quote["bidPrice"]
+
+
+def get_value_of_portfolio(portfolio):
+    current_quotes = get_current_quotes(portfolio["positions"].keys())
+
+    total_value = portfolio["cash"]
+
+    for symbol, quantity in portfolio["positions"].items():
+        total_value += get_bid_price(current_quotes, symbol) * quantity
+
+    return total_value
+
+
+def determine_desired_positions(stocks, amount_to_spend):
+    current_quotes = get_current_quotes(stocks)
+
+    desired_positions = {}
+
+    amount_per_stock = amount_to_spend / len(stocks)
+
+    for symbol in stocks:
+        desired_positions[symbol] = amount_per_stock // get_ask_price(current_quotes, symbol)
+
+    return desired_positions
+
+
+def determine_position_changes(current_positions, desired_positions):
+    sell = {}
+    buy = {}
+
+    stocks = set(current_positions.keys()) | set(desired_positions.keys())
+
+    for stock in stocks:
+        if stock not in desired_positions.keys():
+            sell[stock] = current_positions[stock]
+        elif stock not in current_positions.keys():
+            buy[stock] = desired_positions[stock]
+        else:
+            quantity_to_buy = desired_positions[stock] - current_positions[stock]
+            if quantity_to_buy > 0:
+                buy[stock] = quantity_to_buy
+            else:
+                sell[stock] = -quantity_to_buy
+
+    return sell, buy
+
+
+def get_filled_order_confirmations(account_hash, orders):
+    order_confirmations = []
+
+    for symbol, order_id in orders:
+        while True:
+            order_details = get_order(account_hash, order_id)
+            if order_details["status"] in ["FILLED", "REJECTED", "CANCELED", "EXPIRED", "REPLACED"]:
+                order_confirmations.append((symbol, order_details))
+                break
+            else:
+                time.sleep(1)
+
+    return order_confirmations
+
+
+def get_excecuted_order_value(order_details):
+    value = 0.0
+
+    for activity in order_details["orderActivityCollection"]:
+        for leg in activity["executionLegs"]:
+            value += leg["quantity"] * leg["price"]
+
+    return value
+
+
+def run():
+    account_hash = "7BDF9FB8A3BAD3396DFD3823DD0D7AAC8C2EE35D4A30BAAD4349111DD8D3D133"
+
+    desired_stocks = create_strategy()
+
+    current_portfolio = get_portfolio(account_hash)
+
+    portfolio_value = get_value_of_portfolio(current_portfolio)
+
+    print(f"Portfolio value: {portfolio_value}")
+
+    cancel_outstanding_orders(account_hash)
+
+    desired_positions = determine_desired_positions(desired_stocks, portfolio_value)
+
+    print(desired_positions)
+
+    sell_positions, buy_positions = determine_position_changes(current_portfolio["positions"], desired_positions)
+
+    sell_orders = [(symbol, place_market_order(account_hash, symbol, quantity, "SELL")) for symbol, quantity in sell_positions.items()]
+
+    buy_orders = [(symbol, place_market_order(account_hash, symbol, quantity, "BUY")) for symbol, quantity in buy_positions.items()]
+
+    order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
+
+    net_cash = 0.0
+    for symbol, order_details in order_confirmations:
+        if order_details["status"] == "FILLED":
+            if order_details["orderLegCollection"][0]["instruction"] == "SELL":
+                current_portfolio["positions"][symbol] -= order_details["filledQuantity"]
+                net_cash += get_excecuted_order_value(order_details)
+            else:
+                current_portfolio["positions"][symbol] += order_details["filledQuantity"]
+                net_cash -= get_excecuted_order_value(order_details)
+        else:
+            print("TRADE FAILED")
+
+    current_portfolio["cash"] += net_cash
+
+    store_portfolio(account_hash, current_portfolio)
+
+def request_handler(event, lambda_context):
+    print("Event: ", event)
+    print("Lambda context: ", lambda_context)
+
+    try:
+        run()
+
+        response = {
+            "statusCode": 200,
+        }
+
+        return response
+
+    except Exception as e:
+        print(traceback.format_exc())
+
+        response = {
+            "statusCode": 500,
+            "error": e
+        }
+
+        return response

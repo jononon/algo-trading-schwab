@@ -1,0 +1,44 @@
+service: algotrading
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-west-1
+  stackTags:
+    project: "algo-trading"
+  environment:
+    PORTFOLIO_TABLE_NAME: algotrading-portfolios
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "ssm:PutParameter"
+        - "ssm:GetParameter"
+      Resource: "arn:aws:ssm:*:*:parameter/algotrading/*"
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+      Resource: "arn:aws:dynamodb:*:*:table/${self:provider.environment.PORTFOLIO_TABLE_NAME}"
+
+functions:
+  run:
+    handler: main.request_handler
+
+resources:
+  Resources:
+    PortfolioTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:provider.environment.PORTFOLIO_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: "accountHash"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "accountHash"
+            KeyType: "HASH"
+        BillingMode: PAY_PER_REQUEST
+
+plugins:
+  - serverless-python-requirements
