@@ -30,6 +30,12 @@ functions:
   run:
     handler: main.request_handler
     timeout: 900 # 15 minutes
+    events:
+      - schedule:
+          # Cron expression for every weekday (Monday to Friday) at 13:30 UTC
+          # Remember to adjust this based on daylight saving time changes if necessary
+          rate: cron(30 13 ? * MON-FRI *)
+          enabled: true
 
 resources:
   Resources:
