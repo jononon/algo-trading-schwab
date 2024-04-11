@@ -1,7 +1,6 @@
+from decimal import Decimal
 import boto3
-import json
 import os
-from typing import Dict
 
 # Initialize a DynamoDB client
 dynamodb = boto3.resource('dynamodb')
@@ -13,8 +12,8 @@ def store_portfolio(account_hash, portfolio):
     table.put_item(
        Item={
             'accountHash': account_hash,
-            'cash': portfolio["cash"],
-            'positions': portfolio["positions"]
+            'cash': Decimal(portfolio["cash"]),
+            'positions': {k: Decimal(v) for k, v in portfolio["positions"].items()}
         }
     )
 
