@@ -5,7 +5,7 @@ import logging
 import copy
 from decimal import Decimal
 
-from schwab import get_price_history, get_accounts, get_orders, cancel_order, get_current_quotes, get_account, place_market_order, get_order
+from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order
 from dynamodb import get_portfolio, store_portfolio
 
 logger = logging.getLogger()
@@ -280,9 +280,9 @@ def run():
     logger.info(f"Selling positions: {sell_positions}")
     logger.info(f"Buying positions: {buy_positions}")
 
-    sell_orders = [(symbol, place_market_order(account_hash, symbol, quantity, "SELL")) for symbol, quantity in sell_positions.items()]
+    sell_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "SELL")) for symbol, quantity in sell_positions.items()]
 
-    buy_orders = [(symbol, place_market_order(account_hash, symbol, quantity, "BUY")) for symbol, quantity in buy_positions.items()]
+    buy_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "BUY")) for symbol, quantity in buy_positions.items()]
 
     order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
 
