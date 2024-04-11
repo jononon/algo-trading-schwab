@@ -75,3 +75,4 @@ custom:
 plugins:
   - serverless-python-requirements
   - serverless-plugin-aws-alerts
+  - serverless-plugin-resource-tagging
