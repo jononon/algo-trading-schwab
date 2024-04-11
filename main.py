@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta
 import time
 import traceback
+import logging
 
 from schwab import get_price_history, get_accounts, get_orders, cancel_order, get_current_quotes, get_account, place_market_order, get_order
 from dynamodb import get_portfolio, store_portfolio
 
+logger = logging.getLogger()
+logger.setLevel("INFO")
 
 def create_strategy():
     data = {
@@ -20,24 +23,25 @@ def create_strategy():
     }
 
     if calculate_cumulative_return(data["AGG"], 60) > calculate_cumulative_return(data["BIL"], 60):
-        print("RISK ON")
+        logger.info("Strategy selected: risk on")
         options = ["SOXL", "TQQQ", "UPRO", "TECL"]
         strengths = [(stock, calculate_relative_strength_index(data[stock], 10)) for stock in options]
         sorted_stocks = sorted(strengths, key=lambda x: x[1])
         top_two_stocks = sorted_stocks[:2]
-        print(f"Top two stocks: {top_two_stocks}")
+        logger.info(f"Top two stocks: {top_two_stocks}")
         return [x[0] for x in top_two_stocks]
     else:
         if calculate_cumulative_return(data["TLT"], 20) < calculate_cumulative_return(data["BIL"], 20):
-            print("RISK OFF, RISING RATES")
+            logger.info("Strategy selected: risk off, rising rates")
             options = ["QID", "TBF"]
             strengths = [(stock, calculate_relative_strength_index(data[stock], 20)) for stock in options]
             sorted_stocks = sorted(strengths, key=lambda x: x[1])
             top_stock = sorted_stocks[0]
-            print(f"UUP, {top_stock}")
+            logger.info(f"UUP, {top_stock}")
             return ["UUP", top_stock[0]]
         else:
-            print("UGL, TMF, BTAL, XLP")
+            logger.info("Strategy selected: risk off, falling rates")
+            logger.info("UGL, TMF, BTAL, XLP")
             return ["UGL, TMF, BTAL, XLP"]
 
 
@@ -94,10 +98,12 @@ def format_time_schwab(time_obj):
 
 
 def cancel_outstanding_orders(account_hash: str):
-    now = datetime.utcnow()
-    yesterday = now - timedelta(days=1)
+    logger.info(f"Cancelling outstanding orders in account {account_hash}")
 
-    from_time = format_time_schwab(yesterday)
+    now = datetime.utcnow()
+    past = now - timedelta(days=2)
+
+    from_time = format_time_schwab(past)
     to_time = format_time_schwab(now)
 
     orders = get_orders(account_hash, from_time, to_time)
@@ -105,16 +111,19 @@ def cancel_outstanding_orders(account_hash: str):
     for order in orders:
         if order["cancelable"]:
             cancel_order(account_hash, order["orderId"])
+            logger.info(f"Order {order['orderId']} has been canceled")
+        else:
+            logger.info(f"Order {order['orderId']} is not cancelable")
 
 
 def get_ask_price(current_quotes, stock):
     if stock not in current_quotes:
-        print(f"{stock} NOT IN FETCHED QUOTES")
+        logger.warning(f"{stock} NOT IN FETCHED QUOTES")
     else:
         information = current_quotes[stock]
 
         if not information["realtime"]:
-            print(f"NOT REALTIME QUOTE FOR {stock}")
+            logger.warning(f"NOT REALTIME QUOTE FOR {stock}")
 
         quote = information["quote"]
         return quote["askPrice"]
@@ -122,12 +131,12 @@ def get_ask_price(current_quotes, stock):
 
 def get_bid_price(current_quotes, stock):
     if stock not in current_quotes:
-        print(f"{stock} NOT IN FETCHED QUOTES")
+        logger.warning(f"{stock} NOT IN FETCHED QUOTES")
     else:
         information = current_quotes[stock]
 
         if not information["realtime"]:
-            print(f"NOT REALTIME QUOTE FOR {stock}")
+            logger.warning(f"NOT REALTIME QUOTE FOR {stock}")
 
         quote = information["quote"]
         return quote["bidPrice"]
@@ -183,7 +192,12 @@ def get_filled_order_confirmations(account_hash, orders):
 
     for symbol, order_id in orders:
         while True:
+            logger.info(f"Checking order {order_id} for {symbol}")
+
             order_details = get_order(account_hash, order_id)
+
+            logger.info(f"Order details: {order_details}")
+
             if order_details["status"] in ["FILLED", "REJECTED", "CANCELED", "EXPIRED", "REPLACED"]:
                 order_confirmations.append((symbol, order_details))
                 break
@@ -206,21 +220,30 @@ def get_excecuted_order_value(order_details):
 def run():
     account_hash = "293B4140772D0B86E322EC9497BBEC6F3203B62AFD5C4B2CF1DC8E10880B5CD0"
 
+    logger.info(f"Starting bot for account {account_hash}")
+
     desired_stocks = create_strategy()
+
+    logger.info(f"Desired stocks: {desired_stocks}")
 
     current_portfolio = get_portfolio(account_hash)
 
+    logger.info(f"Current portfolio: {current_portfolio}")
+
     portfolio_value = get_value_of_portfolio(current_portfolio)
 
-    print(f"Portfolio value: {portfolio_value}")
+    logger.info(f"Portfolio value: {portfolio_value}")
 
     cancel_outstanding_orders(account_hash)
 
     desired_positions = determine_desired_positions(desired_stocks, portfolio_value)
 
-    print(desired_positions)
+    logger.info(f"Desired positions: {desired_positions}")
 
     sell_positions, buy_positions = determine_position_changes(current_portfolio["positions"], desired_positions)
+
+    logger.info(f"Selling positions: {sell_positions}")
+    logger.info(f"Buying positions: {buy_positions}")
 
     sell_orders = [(symbol, place_market_order(account_hash, symbol, quantity, "SELL")) for symbol, quantity in sell_positions.items()]
 
@@ -241,9 +264,11 @@ def run():
                 current_portfolio["positions"][symbol] += order_details["filledQuantity"]
                 net_cash -= get_excecuted_order_value(order_details)
         else:
-            print("TRADE FAILED")
+            logger.error("TRADE FAILED")
 
     current_portfolio["cash"] += net_cash
+
+    logger.info(f"New portfolio: {current_portfolio}")
 
     store_portfolio(account_hash, current_portfolio)
 
