@@ -273,8 +273,8 @@ def run():
     store_portfolio(account_hash, current_portfolio)
 
 def request_handler(event, lambda_context):
-    logger.info("Event: ", event)
-    logger.info("Lambda context: ", lambda_context)
+    logger.info(f"Event: {event}")
+    logger.info(f"Lambda context: {lambda_context} ")
 
     try:
         run()
