@@ -265,7 +265,8 @@ def get_excecuted_order_value(order_details):
 
     return value
 
-def run_for_portfolio(current_portfolio):
+
+def run_for_portfolio(current_portfolio, desired_stocks):
     account_hash = current_portfolio["accountHash"]
 
     logger.info(f"Processing account with hash {account_hash}")
@@ -316,6 +317,7 @@ def run_for_portfolio(current_portfolio):
 
     store_portfolio(current_portfolio)
 
+
 def run():
     logger.info(f"Starting bot")
 
@@ -326,7 +328,7 @@ def run():
     portfolios = get_all_portfolios()
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(run_for_portfolio, portfolio) for portfolio in portfolios]
+        futures = [executor.submit(run_for_portfolio, portfolio, desired_stocks) for portfolio in portfolios]
 
         exceptions = []
 
@@ -339,6 +341,7 @@ def run():
 
     if exceptions:
         raise Exception("Errors occurred in one or more threads")
+
 
 def request_handler(event, lambda_context):
     logger.info(f"Event: {event}")
