@@ -225,7 +225,8 @@ def determine_position_changes(current_positions: dict[str, Decimal], desired_po
             if current_positions[stock] != Decimal(0.0):
                 sell[stock] = current_positions[stock]
         elif stock not in current_positions.keys():
-            buy[stock] = desired_positions[stock]
+            if desired_positions[stock] != Decimal(0.0):
+                buy[stock] = desired_positions[stock]
         else:
             quantity_to_buy = desired_positions[stock] - current_positions[stock]
             if quantity_to_buy > Decimal(0):
