@@ -3,6 +3,7 @@ import time
 import traceback
 import logging
 import copy
+import concurrent.futures
 from decimal import Decimal
 
 from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order
@@ -264,11 +265,59 @@ def get_excecuted_order_value(order_details):
 
     return value
 
+def run_for_portfolio(current_portfolio):
+    account_hash = current_portfolio["accountHash"]
+
+    logger.info(f"Processing account with hash {account_hash}")
+
+    logger.info(f"Current portfolio: {current_portfolio}")
+
+    portfolio_value = get_value_of_portfolio(current_portfolio)
+
+    logger.info(f"Portfolio value: {portfolio_value}")
+
+    cancel_outstanding_orders(account_hash)
+
+    desired_positions = determine_desired_positions(desired_stocks, portfolio_value)
+
+    logger.info(f"Desired positions: {desired_positions}")
+
+    sell_positions, buy_positions = determine_position_changes(current_portfolio["positions"], desired_positions)
+
+    logger.info(f"Selling positions: {sell_positions}")
+    logger.info(f"Buying positions: {buy_positions}")
+
+    sell_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "SELL")) for symbol, quantity in
+                   sell_positions.items()]
+
+    buy_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "BUY")) for symbol, quantity in
+                  buy_positions.items()]
+
+    order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
+
+    net_cash = Decimal(0.0)
+    for symbol, order_details in order_confirmations:
+        if order_details["status"] == "FILLED":
+            if symbol not in current_portfolio["positions"]:
+                current_portfolio["positions"][symbol] = Decimal(0)
+
+            if order_details["orderLegCollection"][0]["instruction"] == "SELL":
+                current_portfolio["positions"][symbol] -= order_details["filledQuantity"]
+                net_cash += get_excecuted_order_value(order_details)
+            else:
+                current_portfolio["positions"][symbol] += order_details["filledQuantity"]
+                net_cash -= get_excecuted_order_value(order_details)
+        else:
+            logger.error("TRADE FAILED")
+
+    current_portfolio["cash"] += net_cash
+
+    logger.info(f"New portfolio: {current_portfolio}")
+
+    store_portfolio(current_portfolio)
 
 def run():
-    account_hash = "293B4140772D0B86E322EC9497BBEC6F3203B62AFD5C4B2CF1DC8E10880B5CD0"
-
-    logger.info(f"Starting bot for account {account_hash}")
+    logger.info(f"Starting bot")
 
     desired_stocks = create_strategy()
 
@@ -276,53 +325,20 @@ def run():
 
     portfolios = get_all_portfolios()
 
-    for current_portfolio in portfolios:
-        account_hash = current_portfolio["accountHash"]
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(run_for_portfolio, portfolio) for portfolio in portfolios]
 
-        logger.info(f"Current portfolio: {current_portfolio}")
+        exceptions = []
 
-        portfolio_value = get_value_of_portfolio(current_portfolio)
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as exc:
+                exceptions.append(exc)
+                traceback.print_tb(exc.__traceback__)
 
-        logger.info(f"Portfolio value: {portfolio_value}")
-
-        cancel_outstanding_orders(account_hash)
-
-        desired_positions = determine_desired_positions(desired_stocks, portfolio_value)
-
-        logger.info(f"Desired positions: {desired_positions}")
-
-        sell_positions, buy_positions = determine_position_changes(current_portfolio["positions"], desired_positions)
-
-        logger.info(f"Selling positions: {sell_positions}")
-        logger.info(f"Buying positions: {buy_positions}")
-
-        sell_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "SELL")) for symbol, quantity in sell_positions.items()]
-
-        buy_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "BUY")) for symbol, quantity in buy_positions.items()]
-
-        order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
-
-        net_cash = Decimal(0.0)
-        for symbol, order_details in order_confirmations:
-            if order_details["status"] == "FILLED":
-                if symbol not in current_portfolio["positions"]:
-                    current_portfolio["positions"][symbol] = Decimal(0)
-
-                if order_details["orderLegCollection"][0]["instruction"] == "SELL":
-                    current_portfolio["positions"][symbol] -= order_details["filledQuantity"]
-                    net_cash += get_excecuted_order_value(order_details)
-                else:
-                    current_portfolio["positions"][symbol] += order_details["filledQuantity"]
-                    net_cash -= get_excecuted_order_value(order_details)
-            else:
-                logger.error("TRADE FAILED")
-
-        current_portfolio["cash"] += net_cash
-
-        logger.info(f"New portfolio: {current_portfolio}")
-
-        store_portfolio(current_portfolio)
-
+    if exceptions:
+        raise Exception("Errors occurred in one or more threads")
 
 def request_handler(event, lambda_context):
     logger.info(f"Event: {event}")
