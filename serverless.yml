@@ -20,6 +20,7 @@ provider:
       Action:
         - "dynamodb:GetItem"
         - "dynamodb:PutItem"
+        - "dynamodb:Scan"
       Resource: "arn:aws:dynamodb:*:*:table/${self:provider.environment.PORTFOLIO_TABLE_NAME}"
     - Effect: "Allow"
       Action:
