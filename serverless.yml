@@ -31,6 +31,7 @@ functions:
   run:
     handler: main.request_handler
     timeout: 900 # 15 minutes
+    maximumRetryAttempts: 0
     events:
       - schedule:
           method: scheduler
