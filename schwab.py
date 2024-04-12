@@ -83,6 +83,9 @@ def get_price_history(symbol):
 
 
 def get_current_quotes(symbols: list[str]):
+    if len(symbols) == 0:
+        return {}
+
     url = f"{BASE_URL}/marketdata/v1/quotes?symbols={','.join(symbols)}&fields=quote&indicative=false"
     headers = {
         'Authorization': f'Bearer {get_access_token()}'
