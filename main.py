@@ -304,10 +304,10 @@ def run_for_portfolio(current_portfolio, desired_stocks):
                 current_portfolio["positions"][symbol] = Decimal(0)
 
             if order_details["orderLegCollection"][0]["instruction"] == "SELL":
-                current_portfolio["positions"][symbol] -= order_details["filledQuantity"]
+                current_portfolio["positions"][symbol] -= Decimal(order_details["filledQuantity"])
                 net_cash += get_excecuted_order_value(order_details)
             else:
-                current_portfolio["positions"][symbol] += order_details["filledQuantity"]
+                current_portfolio["positions"][symbol] += Decimal(order_details["filledQuantity"])
                 net_cash -= get_excecuted_order_value(order_details)
         else:
             logger.error("TRADE FAILED")
