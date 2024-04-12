@@ -6,7 +6,7 @@ import copy
 from decimal import Decimal
 
 from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order
-from dynamodb import get_portfolio, store_portfolio
+from dynamodb import store_portfolio, get_all_portfolios
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -274,51 +274,54 @@ def run():
 
     logger.info(f"Desired stocks: {desired_stocks}")
 
-    current_portfolio = get_portfolio(account_hash)
+    portfolios = get_all_portfolios()
 
-    logger.info(f"Current portfolio: {current_portfolio}")
+    for current_portfolio in portfolios:
+        account_hash = current_portfolio["accountHash"]
 
-    portfolio_value = get_value_of_portfolio(current_portfolio)
+        logger.info(f"Current portfolio: {current_portfolio}")
 
-    logger.info(f"Portfolio value: {portfolio_value}")
+        portfolio_value = get_value_of_portfolio(current_portfolio)
 
-    cancel_outstanding_orders(account_hash)
+        logger.info(f"Portfolio value: {portfolio_value}")
 
-    desired_positions = determine_desired_positions(desired_stocks, portfolio_value)
+        cancel_outstanding_orders(account_hash)
 
-    logger.info(f"Desired positions: {desired_positions}")
+        desired_positions = determine_desired_positions(desired_stocks, portfolio_value)
 
-    sell_positions, buy_positions = determine_position_changes(current_portfolio["positions"], desired_positions)
+        logger.info(f"Desired positions: {desired_positions}")
 
-    logger.info(f"Selling positions: {sell_positions}")
-    logger.info(f"Buying positions: {buy_positions}")
+        sell_positions, buy_positions = determine_position_changes(current_portfolio["positions"], desired_positions)
 
-    sell_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "SELL")) for symbol, quantity in sell_positions.items()]
+        logger.info(f"Selling positions: {sell_positions}")
+        logger.info(f"Buying positions: {buy_positions}")
 
-    buy_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "BUY")) for symbol, quantity in buy_positions.items()]
+        sell_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "SELL")) for symbol, quantity in sell_positions.items()]
 
-    order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
+        buy_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "BUY")) for symbol, quantity in buy_positions.items()]
 
-    net_cash = Decimal(0.0)
-    for symbol, order_details in order_confirmations:
-        if order_details["status"] == "FILLED":
-            if symbol not in current_portfolio["positions"]:
-                current_portfolio["positions"][symbol] = Decimal(0)
+        order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
 
-            if order_details["orderLegCollection"][0]["instruction"] == "SELL":
-                current_portfolio["positions"][symbol] -= order_details["filledQuantity"]
-                net_cash += get_excecuted_order_value(order_details)
+        net_cash = Decimal(0.0)
+        for symbol, order_details in order_confirmations:
+            if order_details["status"] == "FILLED":
+                if symbol not in current_portfolio["positions"]:
+                    current_portfolio["positions"][symbol] = Decimal(0)
+
+                if order_details["orderLegCollection"][0]["instruction"] == "SELL":
+                    current_portfolio["positions"][symbol] -= order_details["filledQuantity"]
+                    net_cash += get_excecuted_order_value(order_details)
+                else:
+                    current_portfolio["positions"][symbol] += order_details["filledQuantity"]
+                    net_cash -= get_excecuted_order_value(order_details)
             else:
-                current_portfolio["positions"][symbol] += order_details["filledQuantity"]
-                net_cash -= get_excecuted_order_value(order_details)
-        else:
-            logger.error("TRADE FAILED")
+                logger.error("TRADE FAILED")
 
-    current_portfolio["cash"] += net_cash
+        current_portfolio["cash"] += net_cash
 
-    logger.info(f"New portfolio: {current_portfolio}")
+        logger.info(f"New portfolio: {current_portfolio}")
 
-    store_portfolio(account_hash, current_portfolio)
+        store_portfolio(current_portfolio)
 
 
 def request_handler(event, lambda_context):
