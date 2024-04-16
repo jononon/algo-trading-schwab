@@ -218,21 +218,24 @@ def determine_position_changes(current_positions: dict[str, Decimal], desired_po
     sell = {}
     buy = {}
 
-    stocks = set(current_positions.keys()) | set(desired_positions.keys())
+    non_zero_current_positions = {stock for stock, quantity in current_positions.items() if quantity != Decimal('0')}
+    if non_zero_current_positions != desired_positions:
 
-    for stock in stocks:
-        if stock not in desired_positions.keys():
-            if current_positions[stock] != Decimal(0.0):
-                sell[stock] = current_positions[stock]
-        elif stock not in current_positions.keys():
-            if desired_positions[stock] != Decimal(0.0):
-                buy[stock] = desired_positions[stock]
-        else:
-            quantity_to_buy = desired_positions[stock] - current_positions[stock]
-            if quantity_to_buy > Decimal(0):
-                buy[stock] = quantity_to_buy
-            elif quantity_to_buy < Decimal(0):
-                sell[stock] = -quantity_to_buy
+        stocks = set(current_positions.keys()) | set(desired_positions.keys())
+
+        for stock in stocks:
+            if stock not in desired_positions.keys():
+                if current_positions[stock] != Decimal(0.0):
+                    sell[stock] = current_positions[stock]
+            elif stock not in current_positions.keys():
+                if desired_positions[stock] != Decimal(0.0):
+                    buy[stock] = desired_positions[stock]
+            else:
+                quantity_to_buy = desired_positions[stock] - current_positions[stock]
+                if quantity_to_buy > Decimal(0):
+                    buy[stock] = quantity_to_buy
+                elif quantity_to_buy < Decimal(0):
+                    sell[stock] = -quantity_to_buy
 
     return sell, buy
 
