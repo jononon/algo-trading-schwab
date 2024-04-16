@@ -219,7 +219,7 @@ def determine_position_changes(current_positions: dict[str, Decimal], desired_po
     buy = {}
 
     non_zero_current_positions = {stock for stock, quantity in current_positions.items() if quantity != Decimal('0')}
-    if non_zero_current_positions != desired_positions:
+    if non_zero_current_positions != desired_positions.keys():
 
         stocks = set(current_positions.keys()) | set(desired_positions.keys())
 
