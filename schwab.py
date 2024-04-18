@@ -25,14 +25,22 @@ def get_token(authorization_code):
 
     headers = {'Authorization': f'Basic {base64.b64encode(bytes(f"{get_app_key()}:{get_app_secret()}", "utf-8")).decode("utf-8")}', 'Content-Type': 'application/x-www-form-urlencoded'}
     data = {'grant_type': 'authorization_code', 'code': authorization_code, 'redirect_uri': redirect_uri}
-    return requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data).json()
+    resp = requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data)
+
+    resp.raise_for_status()
+
+    return resp.json()
 
 
 def get_token_refresh(refresh_token):
     headers = {'Authorization': f'Basic {base64.b64encode(bytes(f"{get_app_key()}:{get_app_secret()}", "utf-8")).decode("utf-8")}',
                'Content-Type': 'application/x-www-form-urlencoded'}
     data = {'grant_type': 'refresh_token', 'refresh_token': refresh_token}
-    return requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data).json()
+    resp = requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data)
+
+    resp.raise_for_status()
+
+    return resp.json()
 
 
 def get_access_token():
