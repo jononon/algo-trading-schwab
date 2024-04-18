@@ -1,3 +1,4 @@
+from functools import cached_property
 import json
 import base64
 import time
@@ -7,30 +8,26 @@ from ssm import get_secret, put_secret
 
 BASE_URL = "https://api.schwabapi.com"
 REDIRECT_URI = 'https://schwab.jonathandamico.me/callback'
-APP_KEY = None
-APP_SECRET = None
 REFRESH_TOKEN = None
 ACCESS_TOKEN = None
 TOKEN_EXPIRY = None
 
 
+@cached_property
 def get_app_key():
-    global APP_KEY
-    if APP_KEY is None:
-        APP_KEY = get_secret("/algotrading/schwab/appkey")
-        return APP_KEY
+    return get_secret("/algotrading/schwab/appkey")
 
 
+@cached_property
 def get_app_secret():
-    global APP_SECRET
-    if APP_SECRET is None:
-        APP_SECRET = get_secret("/algotrading/schwab/appsecret")
-        return APP_SECRET
+    return get_secret("/algotrading/schwab/appsecret")
 
 
 def get_token(authorization_code):
+    redirect_uri = f"{os.environ['API_URL']}/callback"
+
     headers = {'Authorization': f'Basic {base64.b64encode(bytes(f"{get_app_key()}:{get_app_secret()}", "utf-8")).decode("utf-8")}', 'Content-Type': 'application/x-www-form-urlencoded'}
-    data = {'grant_type': 'authorization_code', 'code': authorization_code, 'redirect_uri': REDIRECT_URI}
+    data = {'grant_type': 'authorization_code', 'code': authorization_code, 'redirect_uri': redirect_uri}
     return requests.post('https://api.schwabapi.com/v1/oauth/token', headers=headers, data=data).json()
 
 
