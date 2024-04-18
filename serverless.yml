@@ -10,6 +10,7 @@ provider:
     project: "algo-trading"
   environment:
     PORTFOLIO_TABLE_NAME: algotrading-portfolios
+    API_URL: !GetAtt HttpApi.ApiEndpoint
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -38,6 +39,18 @@ functions:
           rate:
             - cron(30 9 ? * MON-FRI *)
           timezone: America/New_York
+  auth:
+    handler: auth.auth_handler
+    events:
+      - httpApi:
+          path: /auth
+          method: get
+  callback:
+    handler: auth.callback_handler
+    events:
+      - httpApi:
+          path: /callback
+          method: get
 
 resources:
   Resources:
