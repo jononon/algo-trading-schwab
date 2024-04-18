@@ -34,6 +34,9 @@ def auth_handler(event, lambda_context):
 
 
 def callback_handler(event, lambda_context):
+    logger.info(f"Event: {event}")
+    logger.info(f"Lambda context: {lambda_context} ")
+
     code = event['queryStringParameters']['code']
 
     token_resp = schwab.get_token(code)
