@@ -12,7 +12,7 @@ def auth_handler(event, lambda_context):
     logger.info(f"Lambda context: {lambda_context} ")
 
     # Define the authorization endpoint and required parameters
-    client_id = 'YOUR_CLIENT_ID'
+    client_id = schwab.get_app_key()
     redirect_uri = f"{os.environ['API_URL']}/callback"
     scope = 'readonly'  # Change this to the actual scopes required by your app
     response_type = 'code'
