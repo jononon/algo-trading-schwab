@@ -7,6 +7,7 @@ import logging
 logger = logging.getLogger()
 logger.setLevel("INFO")
 
+
 def auth_handler(event, lambda_context):
     logger.info(f"Event: {event}")
     logger.info(f"Lambda context: {lambda_context} ")
@@ -18,7 +19,7 @@ def auth_handler(event, lambda_context):
     response_type = 'code'
 
     # Construct the authorization URL
-    authorization_url = f"https://api.schwab.com/oauth/authorize?response_type={response_type}&client_id={client_id}&redirect_uri={redirect_uri}&scope={scope}"
+    authorization_url = f"https://api.schwabapi.com/v1/oauth/authorize?response_type={response_type}&client_id={client_id}&redirect_uri={redirect_uri}&scope={scope}"
 
     # Redirect the user to the authorization URL
     response = {
