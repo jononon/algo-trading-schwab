@@ -1,4 +1,3 @@
-from functools import cached_property
 import json
 import base64
 import time
@@ -13,12 +12,10 @@ ACCESS_TOKEN = None
 TOKEN_EXPIRY = None
 
 
-@cached_property
 def get_app_key():
     return get_secret("/algotrading/schwab/appkey")
 
 
-@cached_property
 def get_app_secret():
     return get_secret("/algotrading/schwab/appsecret")
 
