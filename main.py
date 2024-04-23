@@ -30,6 +30,7 @@ def create_strategy():
         options = ["SOXL", "TQQQ", "UPRO", "TECL"]
         strengths = [(stock, calculate_relative_strength_index(data[stock], 10)) for stock in options]
         sorted_stocks = sorted(strengths, key=lambda x: x[1])
+        logger.info(f"Stocks sorted by 10 day RSI: {sorted_stocks}")
         bottom_two_stocks = sorted_stocks[:2]
         logger.info(f"Top two stocks: {bottom_two_stocks}")
         return [x[0] for x in bottom_two_stocks]
@@ -39,6 +40,7 @@ def create_strategy():
             options = ["QID", "TBF"]
             strengths = [(stock, calculate_relative_strength_index(data[stock], 20)) for stock in options]
             sorted_stocks = sorted(strengths, key=lambda x: x[1])
+            logger.info(f"Stocks sorted by 20 day RSI: {sorted_stocks}")
             bottom_stock = sorted_stocks[0]
             logger.info(f"UUP, {bottom_stock}")
             return ["UUP", bottom_stock[0]]
