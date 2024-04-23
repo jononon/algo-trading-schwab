@@ -30,18 +30,18 @@ def create_strategy():
         options = ["SOXL", "TQQQ", "UPRO", "TECL"]
         strengths = [(stock, calculate_relative_strength_index(data[stock], 10)) for stock in options]
         sorted_stocks = sorted(strengths, key=lambda x: x[1])
-        top_two_stocks = sorted_stocks[:2]
-        logger.info(f"Top two stocks: {top_two_stocks}")
-        return [x[0] for x in top_two_stocks]
+        bottom_two_stocks = sorted_stocks[:2]
+        logger.info(f"Top two stocks: {bottom_two_stocks}")
+        return [x[0] for x in bottom_two_stocks]
     else:
         if calculate_cumulative_return(data["TLT"], 20) < calculate_cumulative_return(data["BIL"], 20):
             logger.info("Strategy selected: risk off, rising rates")
             options = ["QID", "TBF"]
             strengths = [(stock, calculate_relative_strength_index(data[stock], 20)) for stock in options]
             sorted_stocks = sorted(strengths, key=lambda x: x[1])
-            top_stock = sorted_stocks[:1]
-            logger.info(f"UUP, {top_stock}")
-            return ["UUP", top_stock[0]]
+            bottom_stock = sorted_stocks[0]
+            logger.info(f"UUP, {bottom_stock}")
+            return ["UUP", bottom_stock[0]]
         else:
             logger.info("Strategy selected: risk off, falling rates")
             logger.info("UGL, TMF, BTAL, XLP")

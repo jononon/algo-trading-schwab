@@ -9,7 +9,7 @@ It will then execute trades to bring the current portfolio in line with the targ
 Is 60 day cumulative return of AGG (US Aggregate Bond ETF) > 60 day cumulative return of BIL (1-3 Month T-Bill ETF)?
 > Put risk on.
 > 
-> From the following ETFs, invest evenly in the two with the lowest 10 day relative strength:
+> From the following ETFs, invest evenly in the two with the lowest 10 day relative strength index:
 > - SOXL (Direxion Daily Semiconductor Bull 3X Shares)
 > - TQQQ (ProShares UltraPro 3X QQQ)
 > - UPRO (ProShares UltraPro 3X S&P 500)
@@ -18,7 +18,7 @@ Is 60 day cumulative return of AGG (US Aggregate Bond ETF) > 60 day cumulative r
 Is 20 day cumulative return of TLT (20+ Year Treasury Bond ETF) < 20 day cumulative return of BIL (1-3 Month T-Bill ETF)?
 > Put risk off, rising interest rates
 > 
-> Invest 50% in UUP (Invesco DB US Dollar Index Bullish Fund) and 50% in whichever of the following two ETFs has the lowest 20 day relative strength:
+> Invest 50% in UUP (Invesco DB US Dollar Index Bullish Fund) and 50% in whichever of the following two ETFs has the lowest 20 day relative strength index:
 > - QID (ProShares UltraShort QQQ)
 > - TBF (ProShares Short 20+ Year Treasury)
 
