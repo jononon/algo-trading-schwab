@@ -39,7 +39,7 @@ def create_strategy():
             options = ["QID", "TBF"]
             strengths = [(stock, calculate_relative_strength_index(data[stock], 20)) for stock in options]
             sorted_stocks = sorted(strengths, key=lambda x: x[1])
-            top_stock = sorted_stocks[0]
+            top_stock = sorted_stocks[:1]
             logger.info(f"UUP, {top_stock}")
             return ["UUP", top_stock[0]]
         else:
@@ -64,24 +64,25 @@ def calculate_moving_average(data, days):
 
 
 def calculate_relative_strength_index(data, days):
-    # Sort the data by datetime in descending order
-    data.sort(key=lambda x: x['datetime'], reverse=True)
+    # Sort the data by datetime in ascending order so the most recent comes last
+    data.sort(key=lambda x: x['datetime'])
 
-    # Calculate daily price changes for the last 'days' days
-    price_changes = [Decimal(data[i]['close']) - Decimal(data[i + 1]['close']) for i in range(days)]
+    # Calculate daily price changes
+    price_changes = [Decimal(data[i + 1]['close']) - Decimal(data[i]['close']) for i in range(len(data) - 1)]
 
-    # Separate gains and losses
-    gains = [change for change in price_changes if change > 0]
-    losses = [-change for change in price_changes if change < 0]
+    # Initialize gains and losses
+    gains = [max(change, 0) for change in price_changes]
+    losses = [abs(min(change, 0)) for change in price_changes]
 
-    # Calculate average gain and average loss
-    avg_gain = sum(gains) / days if gains else 0
-    avg_loss = sum(losses) / days if losses else 0
+    # Calculate the average gain and average loss using exponential moving average
+    avg_gain = sum(gains[-days:]) / days
+    avg_loss = sum(losses[-days:]) / days
 
-    # Calculate and return the RS
-    relative_strength = avg_gain / avg_loss if avg_loss != 0 else 0
+    # Calculate the RS and RSI
+    rs = avg_gain / avg_loss if avg_loss != 0 else float('inf')  # Avoid division by zero
+    rsi = 100 - (100 / (1 + rs))
 
-    return 100 - (100 / (1 + relative_strength))
+    return rsi
 
 
 def calculate_cumulative_return(data, days):
