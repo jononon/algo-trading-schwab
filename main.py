@@ -112,8 +112,8 @@ def calculate_cumulative_return(ticker, overall_data, days):
     if dividends:
         for dividend in dividends:
             # THIS MAY NOT BE RIGHT
-            if (dividend['ex_date'].date() > datetime.fromtimestamp(ticker_data[days - 1]['datetime']).date() + timedelta(days=1) and
-                    dividend['payment_date'].date() <= datetime.fromtimestamp(ticker_data[0]['datetime']).date() + timedelta(days=1)):
+            if (dividend['ex_date'].date() > datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date() + timedelta(days=1) and
+                    dividend['payment_date'].date() <= datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date() + timedelta(days=1)):
                 dividends_reinvested += dividend['amount']
 
     cumulative_return = (price_current + dividends_reinvested - price_n_days_ago) / price_n_days_ago
