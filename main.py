@@ -132,7 +132,7 @@ def get_dividends(ticker):
     return [{
         'ex_date': datetime.strptime(dividend.ex_dividend_date, date_format),
         'payment_date': datetime.strptime(dividend.pay_date, date_format),
-        'amount': dividend.cash_amount
+        'amount': Decimal(dividend.cash_amount)
     } for dividend in client.list_dividends(ticker, limit=1000)]
 
 
