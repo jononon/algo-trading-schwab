@@ -1,16 +1,20 @@
-from datetime import datetime, timedelta
+import concurrent.futures
+import copy
+import logging
 import time
 import traceback
-import logging
-import copy
-import concurrent.futures
+from datetime import datetime, timedelta
 from decimal import Decimal
+from polygon import RESTClient
 
-from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order
 from dynamodb import store_portfolio, get_all_portfolios
+from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order
+from ssm import get_secret
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
+
+client = RESTClient(api_key=get_secret("/algotrading/polygon/apikey"))
 
 def create_strategy():
     data = {
@@ -25,20 +29,22 @@ def create_strategy():
         "TBF": get_price_history("TBF"),
     }
 
-    if calculate_cumulative_return(data["AGG"], 60) > calculate_cumulative_return(data["BIL"], 60):
+    if (calculate_cumulative_return("AGG", data, 60) >
+            calculate_cumulative_return("BIL", data, 60)):
         logger.info("Strategy selected: risk on")
         options = ["SOXL", "TQQQ", "UPRO", "TECL"]
-        strengths = [(stock, calculate_relative_strength_index(data[stock], 10)) for stock in options]
+        strengths = [(stock, calculate_relative_strength_index(stock, data, 10)) for stock in options]
         sorted_stocks = sorted(strengths, key=lambda x: x[1])
         logger.info(f"Stocks sorted by 10 day RSI: {sorted_stocks}")
         bottom_two_stocks = sorted_stocks[:2]
         logger.info(f"Top two stocks: {bottom_two_stocks}")
         return [x[0] for x in bottom_two_stocks]
     else:
-        if calculate_cumulative_return(data["TLT"], 20) < calculate_cumulative_return(data["BIL"], 20):
+        if (calculate_cumulative_return("TLT", data, 20) <
+                calculate_cumulative_return("BIL", data, 20)):
             logger.info("Strategy selected: risk off, rising rates")
             options = ["QID", "TBF"]
-            strengths = [(stock, calculate_relative_strength_index(data[stock], 20)) for stock in options]
+            strengths = [(stock, calculate_relative_strength_index(stock, data, 20)) for stock in options]
             sorted_stocks = sorted(strengths, key=lambda x: x[1])
             logger.info(f"Stocks sorted by 20 day RSI: {sorted_stocks}")
             bottom_stock = sorted_stocks[0]
@@ -50,27 +56,31 @@ def create_strategy():
             return ["UGL, TMF, BTAL, XLP"]
 
 
-def calculate_moving_average(data, days):
+def calculate_moving_average(ticker, data, days):
+    ticker_data = data[ticker]
+
     # Sort the data by datetime in descending order
-    data.sort(key=lambda x: x['datetime'], reverse=True)
+    ticker_data.sort(key=lambda x: x['datetime'], reverse=True)
 
     # Initialize the total
     total = Decimal(0)
 
     # Iterate over the first 'days' elements
     for i in range(days):
-        total += Decimal(data[i]['close'])
+        total += Decimal(ticker_data[i]['close'])
 
     # Calculate and return the average
     return total / days
 
 
-def calculate_relative_strength_index(data, days):
+def calculate_relative_strength_index(ticker, data, days):
+    ticker_data = data[ticker]
+
     # Sort the data by datetime in ascending order so the most recent comes last
-    data.sort(key=lambda x: x['datetime'])
+    ticker_data.sort(key=lambda x: x['datetime'])
 
     # Calculate daily price changes
-    price_changes = [Decimal(data[i + 1]['close']) - Decimal(data[i]['close']) for i in range(len(data) - 1)]
+    price_changes = [Decimal(ticker_data[i + 1]['close']) - Decimal(ticker_data[i]['close']) for i in range(len(ticker_data) - 1)]
 
     # Initialize gains and losses
     gains = [max(change, 0) for change in price_changes]
@@ -87,16 +97,37 @@ def calculate_relative_strength_index(data, days):
     return rsi
 
 
-def calculate_cumulative_return(data, days):
+def calculate_cumulative_return(ticker, overall_data, days):
+    dividends = get_dividends(ticker)
+    ticker_data = overall_data[ticker]
+
     # Sort the data by datetime in descending order
-    data.sort(key=lambda x: x['datetime'], reverse=True)
+    ticker_data.sort(key=lambda x: x['datetime'], reverse=True)
 
     # Get the closing price for the first day and the 'days'th day
-    price_current = Decimal(data[0]['close'])
-    price_n_days_ago = Decimal(data[days-1]['close']) if len(data) > days-1 else Decimal(data[-1]['close'])
+    price_current = Decimal(ticker_data[0]['close'])
+    price_n_days_ago = Decimal(ticker_data[days - 1]['close']) if len(ticker_data) > days - 1 else Decimal(ticker_data[-1]['close'])
+
+    dividends_reinvested = 0
+    if dividends:
+        for dividend in dividends:
+            if dividend['ex_date'] >= ticker_data[days - 1]['datetime'] and dividend['payment_date'] <= ticker_data[0]['datetime']:
+                dividends_reinvested += dividend['amount']
+
+    cumulative_return = (price_current + dividends_reinvested - price_n_days_ago) / price_n_days_ago
+
+    logger.info(f"Cumulative return for {ticker}: {cumulative_return}, Dividends: {dividends_reinvested}")
 
     # Calculate and return the cumulative return
-    return (price_current - price_n_days_ago) / price_n_days_ago
+    return cumulative_return
+
+
+def get_dividends(ticker):
+    return [{
+        'ex_date': dividend['ex_dividend_date'],
+        'payment_date': dividend['pay_date'],
+        'amount': dividend['cash_amount']
+    } for dividend in client.list_dividends(ticker)]
 
 
 def format_time_schwab(time_obj):
