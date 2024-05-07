@@ -124,9 +124,9 @@ def calculate_cumulative_return(ticker, overall_data, days):
 
 def get_dividends(ticker):
     return [{
-        'ex_date': dividend['ex_dividend_date'],
-        'payment_date': dividend['pay_date'],
-        'amount': dividend['cash_amount']
+        'ex_date': dividend.ex_dividend_date,
+        'payment_date': dividend.pay_date,
+        'amount': dividend.cash_amount
     } for dividend in client.list_dividends(ticker)]
 
 
