@@ -111,7 +111,9 @@ def calculate_cumulative_return(ticker, overall_data, days):
     dividends_reinvested = 0
     if dividends:
         for dividend in dividends:
-            if dividend['ex_date'] >= ticker_data[days - 1]['datetime'] and dividend['payment_date'] <= ticker_data[0]['datetime']:
+            # THIS MAY NOT BE RIGHT
+            if (dividend['ex_date'].date() > datetime.fromtimestamp(ticker_data[days - 1]['datetime']).date() + timedelta(days=1) and
+                    dividend['payment_date'].date() <= datetime.fromtimestamp(ticker_data[0]['datetime']).date() + timedelta(days=1)):
                 dividends_reinvested += dividend['amount']
 
     cumulative_return = (price_current + dividends_reinvested - price_n_days_ago) / price_n_days_ago
@@ -125,9 +127,11 @@ def calculate_cumulative_return(ticker, overall_data, days):
 def get_dividends(ticker):
     time.sleep(0.2)  # Polygon rate limit is 5 requests per second
 
+    date_format = "%Y-%m-%d"
+
     return [{
-        'ex_date': dividend.ex_dividend_date,
-        'payment_date': dividend.pay_date,
+        'ex_date': datetime.strptime(dividend.ex_dividend_date, date_format),
+        'payment_date': datetime.strptime(dividend.pay_date, date_format),
         'amount': dividend.cash_amount
     } for dividend in client.list_dividends(ticker, limit=1000)]
 
