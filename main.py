@@ -123,6 +123,8 @@ def calculate_cumulative_return(ticker, overall_data, days):
 
 
 def get_dividends(ticker):
+    time.sleep(0.2)  # Polygon rate limit is 5 requests per second
+
     return [{
         'ex_date': dividend.ex_dividend_date,
         'payment_date': dividend.pay_date,
