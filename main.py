@@ -129,7 +129,7 @@ def get_dividends(ticker):
         'ex_date': dividend.ex_dividend_date,
         'payment_date': dividend.pay_date,
         'amount': dividend.cash_amount
-    } for dividend in client.list_dividends(ticker)]
+    } for dividend in client.list_dividends(ticker, limit=1000)]
 
 
 def format_time_schwab(time_obj):
