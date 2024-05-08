@@ -53,7 +53,7 @@ def create_strategy():
         else:
             logger.info("Strategy selected: risk off, falling rates")
             logger.info("UGL, TMF, BTAL, XLP")
-            return ["UGL, TMF, BTAL, XLP"]
+            return ["UGL", "TMF", "BTAL", "XLP"]
 
 
 def calculate_moving_average(ticker, data, days):
