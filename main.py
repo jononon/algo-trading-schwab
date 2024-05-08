@@ -67,7 +67,7 @@ def calculate_moving_average(ticker, data, days):
 
     # Iterate over the first 'days' elements
     for i in range(days):
-        total += Decimal(ticker_data[i]['close'])
+        total += Decimal(str(ticker_data[i]['close']))
 
     # Calculate and return the average
     return total / days
@@ -80,7 +80,7 @@ def calculate_relative_strength_index(ticker, data, days):
     ticker_data.sort(key=lambda x: x['datetime'])
 
     # Calculate daily price changes
-    price_changes = [Decimal(ticker_data[i + 1]['close']) - Decimal(ticker_data[i]['close']) for i in range(len(ticker_data) - 1)]
+    price_changes = [Decimal(str(ticker_data[i + 1]['close'])) - Decimal(str(ticker_data[i]['close'])) for i in range(len(ticker_data) - 1)]
 
     # Initialize gains and losses
     gains = [max(change, 0) for change in price_changes]
@@ -105,8 +105,8 @@ def calculate_cumulative_return(ticker, overall_data, days):
     ticker_data.sort(key=lambda x: x['datetime'], reverse=True)
 
     # Get the closing price for the first day and the 'days'th day
-    price_current = Decimal(ticker_data[0]['close'])
-    price_n_days_ago = Decimal(ticker_data[days - 1]['close']) if len(ticker_data) > days - 1 else Decimal(ticker_data[-1]['close'])
+    price_current = Decimal(str(ticker_data[0]['close']))
+    price_n_days_ago = Decimal(str(ticker_data[days - 1]['close'])) if len(ticker_data) > days - 1 else Decimal(str(ticker_data[-1]['close']))
 
     dividends_reinvested = 0
     # if dividends:
@@ -132,7 +132,7 @@ def get_dividends(ticker):
     return [{
         'ex_date': datetime.strptime(dividend.ex_dividend_date, date_format),
         'payment_date': datetime.strptime(dividend.pay_date, date_format),
-        'amount': Decimal(dividend.cash_amount)
+        'amount': Decimal(str(dividend.cash_amount))
     } for dividend in client.list_dividends(ticker, limit=1000)]
 
 
@@ -169,7 +169,7 @@ def get_ask_price(current_quotes, stock):
             logger.warning(f"NOT REALTIME QUOTE FOR {stock}")
 
         quote = information["quote"]
-        return Decimal(quote["askPrice"])
+        return Decimal(str(quote["askPrice"]))
 
 
 def get_bid_price(current_quotes, stock):
@@ -182,7 +182,7 @@ def get_bid_price(current_quotes, stock):
             logger.warning(f"NOT REALTIME QUOTE FOR {stock}")
 
         quote = information["quote"]
-        return Decimal(quote["bidPrice"])
+        return Decimal(str(quote["bidPrice"]))
 
 def get_last_price(current_quotes, stock):
     if stock not in current_quotes:
@@ -194,17 +194,17 @@ def get_last_price(current_quotes, stock):
             logger.warning(f"NOT REALTIME QUOTE FOR {stock}")
 
         quote = information["quote"]
-        return Decimal(quote["lastPrice"])
+        return Decimal(str(quote["lastPrice"]))
 
 
 def get_value_of_portfolio(portfolio):
     current_quotes = get_current_quotes(portfolio["positions"].keys())
 
-    total_value = Decimal(portfolio["cash"])
+    total_value = Decimal(str(portfolio["cash"]))
 
     for symbol, quantity in portfolio["positions"].items():
         # use ask price instead of bid price to ensure that we don't arbitrarially sell stocks
-        total_value += get_ask_price(current_quotes, symbol) * Decimal(quantity)
+        total_value += get_ask_price(current_quotes, symbol) * Decimal(str(quantity))
 
     return total_value
 
@@ -234,7 +234,7 @@ def determine_desired_positions(stocks: list[str], amount_to_spend: Decimal):
 
     amount_per_stock = amount_to_spend / Decimal(len(stocks))
 
-    amount_spent = Decimal(0.0)
+    amount_spent = Decimal(0)
     for symbol in stocks:
         price = get_ask_price(current_quotes, symbol)
 
@@ -258,17 +258,17 @@ def determine_position_changes(current_positions: dict[str, Decimal], desired_po
     sell = {}
     buy = {}
 
-    non_zero_current_positions = {stock for stock, quantity in current_positions.items() if quantity != Decimal('0')}
+    non_zero_current_positions = {stock for stock, quantity in current_positions.items() if quantity != Decimal(0)}
     if non_zero_current_positions != desired_positions.keys():
 
         stocks = set(current_positions.keys()) | set(desired_positions.keys())
 
         for stock in stocks:
             if stock not in desired_positions.keys():
-                if current_positions[stock] != Decimal(0.0):
+                if current_positions[stock] != Decimal(0):
                     sell[stock] = current_positions[stock]
             elif stock not in current_positions.keys():
-                if desired_positions[stock] != Decimal(0.0):
+                if desired_positions[stock] != Decimal(0):
                     buy[stock] = desired_positions[stock]
             else:
                 quantity_to_buy = desired_positions[stock] - current_positions[stock]
@@ -301,11 +301,11 @@ def get_filled_order_confirmations(account_hash, orders):
 
 
 def get_excecuted_order_value(order_details):
-    value = Decimal(0.0)
+    value = Decimal(0)
 
     for activity in order_details["orderActivityCollection"]:
         for leg in activity["executionLegs"]:
-            value += Decimal(leg["quantity"]) * Decimal(leg["price"])
+            value += Decimal(str(leg["quantity"])) * Decimal(str(leg["price"]))
 
     return value
 
@@ -340,17 +340,17 @@ def run_for_portfolio(current_portfolio, desired_stocks):
 
     order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
 
-    net_cash = Decimal(0.0)
+    net_cash = Decimal(0)
     for symbol, order_details in order_confirmations:
         if order_details["status"] == "FILLED":
             if symbol not in current_portfolio["positions"]:
                 current_portfolio["positions"][symbol] = Decimal(0)
 
             if order_details["orderLegCollection"][0]["instruction"] == "SELL":
-                current_portfolio["positions"][symbol] -= Decimal(order_details["filledQuantity"])
+                current_portfolio["positions"][symbol] -= Decimal(str(order_details["filledQuantity"]))
                 net_cash += get_excecuted_order_value(order_details)
             else:
-                current_portfolio["positions"][symbol] += Decimal(order_details["filledQuantity"])
+                current_portfolio["positions"][symbol] += Decimal(str(order_details["filledQuantity"]))
                 net_cash -= get_excecuted_order_value(order_details)
         else:
             logger.error("TRADE FAILED")
