@@ -129,11 +129,15 @@ def get_dividends(ticker):
 
     date_format = "%Y-%m-%d"
 
+    dividends = client.list_dividends(ticker, limit=1000)
+
+    logger.info(dividends)
+
     return [{
         'ex_date': datetime.strptime(dividend.ex_dividend_date, date_format),
         'payment_date': datetime.strptime(dividend.pay_date, date_format),
         'amount': Decimal(str(dividend.cash_amount))
-    } for dividend in client.list_dividends(ticker, limit=1000)]
+    } for dividend in dividends]
 
 
 def format_time_schwab(time_obj):
