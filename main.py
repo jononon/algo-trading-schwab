@@ -99,6 +99,7 @@ def calculate_relative_strength_index(ticker, data, days):
 
 def calculate_cumulative_return(ticker, overall_data, days):
     dividends = get_dividends(ticker)
+    print(dividends)
     ticker_data = overall_data[ticker]
 
     # Sort the data by datetime in descending order
@@ -131,14 +132,17 @@ def get_dividends(ticker):
 
     dividends = client.list_dividends(ticker, limit=1000)
 
-    for dividend in dividends:
-        logger.info(dividend)
+    output = []
 
-    return [{
-        'ex_date': datetime.strptime(dividend.ex_dividend_date, date_format),
-        'payment_date': datetime.strptime(dividend.pay_date, date_format),
-        'amount': Decimal(str(dividend.cash_amount))
-    } for dividend in dividends]
+    for dividend in dividends:
+        if dividend.ex_dividend_date is not None and dividend.pay_date is not None:
+            output.append({
+                'ex_date': datetime.strptime(dividend.ex_dividend_date, date_format),
+                'payment_date': datetime.strptime(dividend.pay_date, date_format),
+                'amount': Decimal(str(dividend.cash_amount))
+            })
+
+    return output
 
 
 def format_time_schwab(time_obj):
