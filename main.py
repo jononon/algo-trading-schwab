@@ -98,7 +98,7 @@ def calculate_relative_strength_index(ticker, data, days):
 
 
 def calculate_cumulative_return(ticker, overall_data, days):
-    # dividends = get_dividends(ticker)
+    dividends = get_dividends(ticker)
     ticker_data = overall_data[ticker]
 
     # Sort the data by datetime in descending order
@@ -108,13 +108,13 @@ def calculate_cumulative_return(ticker, overall_data, days):
     price_current = Decimal(str(ticker_data[0]['close']))
     price_n_days_ago = Decimal(str(ticker_data[days - 1]['close'])) if len(ticker_data) > days - 1 else Decimal(str(ticker_data[-1]['close']))
 
-    dividends_reinvested = 0
-    # if dividends:
-    #     for dividend in dividends:
-    #         # THIS MAY NOT BE RIGHT
-    #         if (dividend['ex_date'].date() > datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date() + timedelta(days=1) and
-    #                 dividend['payment_date'].date() <= datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date() + timedelta(days=1)):
-    #             dividends_reinvested += dividend['amount']
+    dividends_reinvested = Decimal(0)
+    if dividends:
+        for dividend in dividends:
+            # THIS MAY NOT BE RIGHT
+            if (dividend['ex_date'].date() > datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date() + timedelta(days=1) and
+                    dividend['payment_date'].date() <= datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date() + timedelta(days=1)):
+                dividends_reinvested += dividend['amount']
 
     cumulative_return = (price_current + dividends_reinvested - price_n_days_ago) / price_n_days_ago
 
