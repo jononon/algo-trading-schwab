@@ -130,7 +130,7 @@ def calculate_cumulative_return(ticker, overall_data, days):
                                   datetime.fromtimestamp(item['datetime'] / 1000).date() == payment_date), None)
                 if pay_price:
                     pay_price = Decimal(str(pay_price['close']))
-                    additional_shares = (shares_owned * Decimal(str(dividend['amount']))) / pay_price
+                    additional_shares = (shares_owned * Decimal(str(dividend['amount']))) / Decimal(str(pay_price))
                     shares_owned += additional_shares
 
     # Calculate the final value with reinvested dividends
@@ -360,13 +360,17 @@ def run_for_portfolio(current_portfolio, desired_stocks):
     logger.info(f"Selling positions: {sell_positions}")
     logger.info(f"Buying positions: {buy_positions}")
 
+    order_confirmations = []
+
     sell_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "SELL")) for symbol, quantity in
                    sell_positions.items()]
+
+    order_confirmations.extend(get_filled_order_confirmations(account_hash, sell_orders))
 
     buy_orders = [(symbol, place_market_order(account_hash, symbol, int(quantity), "BUY")) for symbol, quantity in
                   buy_positions.items()]
 
-    order_confirmations = get_filled_order_confirmations(account_hash, sell_orders + buy_orders)
+    order_confirmations.extend(get_filled_order_confirmations(account_hash, buy_orders))
 
     net_cash = Decimal(0)
     for symbol, order_details in order_confirmations:
