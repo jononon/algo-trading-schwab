@@ -99,32 +99,48 @@ def calculate_relative_strength_index(ticker, data, days):
 
 def calculate_cumulative_return(ticker, overall_data, days):
     dividends = get_dividends(ticker)
-    print(dividends)
     ticker_data = overall_data[ticker]
 
+    # Sort the data by datetime in ascending order
+    ticker_data.sort(key=lambda x: x['datetime'])
 
-    # Sort the data by datetime in descending order
-    ticker_data.sort(key=lambda x: x['datetime'], reverse=True)
-
-    print(f"Starting date {datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date()} ending date {datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date()}")
+    print(
+        f"Starting date {datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date()} ending date {datetime.fromtimestamp(ticker_data[-1]['datetime'] / 1000).date()}")
 
     # Get the closing price for the first day and the 'days'th day
-    price_current = Decimal(str(ticker_data[0]['close']))
-    price_n_days_ago = Decimal(str(ticker_data[days - 1]['close'])) if len(ticker_data) > days - 1 else Decimal(str(ticker_data[-1]['close']))
+    price_initial = Decimal(str(ticker_data[0]['close']))
+    price_n_days_ago = Decimal(str(ticker_data[days - 1]['close'])) if len(ticker_data) > days - 1 else Decimal(
+        str(ticker_data[-1]['close']))
 
-    dividends_reinvested = Decimal(0)
+    current_date = datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date()
+    n_days_ago_date = datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date()
+
+    # Initialize the number of shares with initial investment
+    shares_owned = Decimal('1')  # Assuming initial shares owned
+
+    # Iterate over dividends
     if dividends:
         for dividend in dividends:
-            # THIS MAY NOT BE RIGHT
-            if (dividend['ex_date'].date() > datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date() + timedelta(days=1) and
-                    dividend['payment_date'].date() <= datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date() + timedelta(days=1)):
-                dividends_reinvested += dividend['amount']
+            ex_date = dividend['ex_date'].date()
+            pay_date = dividend['pay_date'].date()
+            # Check if the ex-date is within the required period
+            if (ex_date > n_days_ago_date and ex_date <= current_date):
+                # Find price at payment date
+                pay_price = next((item for item in ticker_data if
+                                  datetime.fromtimestamp(item['datetime'] / 1000).date() == pay_date), None)
+                if pay_price:
+                    pay_price = Decimal(str(pay_price['close']))
+                    additional_shares = (shares_owned * Decimal(str(dividend['amount']))) / pay_price
+                    shares_owned += additional_shares
 
-    cumulative_return = (price_current + dividends_reinvested - price_n_days_ago) / price_n_days_ago
+    # Calculate the final value with reinvested dividends
+    final_value = shares_owned * price_n_days_ago
+    cumulative_return = (final_value - price_initial) / price_initial
 
-    logger.info(f"Cumulative return for {ticker}: {cumulative_return}, Dividends: {dividends_reinvested}")
+    logger.info(
+        f"Cumulative return for {ticker}: {cumulative_return}, Dividends reinvested: {shares_owned - Decimal('1')}")
 
-    # Calculate and return the cumulative return
+    # Return the cumulative return
     return cumulative_return
 
 
