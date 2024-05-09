@@ -102,6 +102,8 @@ def calculate_cumulative_return(ticker, overall_data, days):
     print(dividends)
     ticker_data = overall_data[ticker]
 
+    print(f"Starting date {datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date()} ending date {datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date()}")
+
     # Sort the data by datetime in descending order
     ticker_data.sort(key=lambda x: x['datetime'], reverse=True)
 
