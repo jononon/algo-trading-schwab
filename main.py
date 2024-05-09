@@ -131,7 +131,8 @@ def get_dividends(ticker):
 
     dividends = client.list_dividends(ticker, limit=1000)
 
-    logger.info(dividends)
+    for dividend in dividends:
+        logger.info(dividend)
 
     return [{
         'ex_date': datetime.strptime(dividend.ex_dividend_date, date_format),
