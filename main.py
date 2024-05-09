@@ -122,12 +122,12 @@ def calculate_cumulative_return(ticker, overall_data, days):
     if dividends:
         for dividend in dividends:
             ex_date = dividend['ex_date'].date()
-            pay_date = dividend['pay_date'].date()
+            payment_date = dividend['payment_date'].date()
             # Check if the ex-date is within the required period
             if (ex_date > n_days_ago_date and ex_date <= current_date):
                 # Find price at payment date
                 pay_price = next((item for item in ticker_data if
-                                  datetime.fromtimestamp(item['datetime'] / 1000).date() == pay_date), None)
+                                  datetime.fromtimestamp(item['datetime'] / 1000).date() == payment_date), None)
                 if pay_price:
                     pay_price = Decimal(str(pay_price['close']))
                     additional_shares = (shares_owned * Decimal(str(dividend['amount']))) / pay_price
