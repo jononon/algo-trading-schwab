@@ -8,7 +8,7 @@ from decimal import Decimal
 from polygon import RESTClient
 
 from dynamodb import store_portfolio, get_all_portfolios
-from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order
+from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order, get_account
 from ssm import get_secret
 
 logger = logging.getLogger()
@@ -342,6 +342,9 @@ def run_for_portfolio(current_portfolio, desired_stocks):
     account_hash = current_portfolio["accountHash"]
 
     logger.info(f"Processing account with hash {account_hash}")
+
+    account_info = get_account(account_hash)
+    current_portfolio["cash"] = Decimal(str(account_info["securitiesAccount"]["currentBalances"]["availableFunds"]))
 
     logger.info(f"Current portfolio: {current_portfolio}")
 
