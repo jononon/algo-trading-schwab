@@ -108,7 +108,7 @@ def calculate_cumulative_return(ticker, overall_data, days):
         f"Starting date {datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date()} ending date {datetime.fromtimestamp(ticker_data[-1]['datetime'] / 1000).date()}")
 
     # Get the closing price for the first day and the 'days'th day
-    price_initial = Decimal(str(ticker_data[0]['close']))
+    price_today = Decimal(str(ticker_data[0]['close']))
     price_n_days_ago = Decimal(str(ticker_data[days - 1]['close'])) if len(ticker_data) > days - 1 else Decimal(
         str(ticker_data[-1]['close']))
 
@@ -134,8 +134,8 @@ def calculate_cumulative_return(ticker, overall_data, days):
                     shares_owned += additional_shares
 
     # Calculate the final value with reinvested dividends
-    final_value = shares_owned * price_n_days_ago
-    cumulative_return = (final_value - price_initial) / price_initial
+    final_value = shares_owned * price_today
+    cumulative_return = (final_value - price_n_days_ago) / price_n_days_ago
 
     logger.info(
         f"Cumulative return for {ticker}: {cumulative_return}, Dividends reinvested: {shares_owned - Decimal('1')}")
