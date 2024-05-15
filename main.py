@@ -112,8 +112,8 @@ def calculate_cumulative_return(ticker, overall_data, days):
     price_n_days_ago = Decimal(str(ticker_data[days - 1]['close'])) if len(ticker_data) > days - 1 else Decimal(
         str(ticker_data[-1]['close']))
 
-    current_date = datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date()
-    n_days_ago_date = datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date()
+    date_today = datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date()
+    date_n_days_ago = datetime.fromtimestamp(ticker_data[days - 1]['datetime'] / 1000).date()
 
     # Initialize the number of shares with initial investment
     shares_owned = Decimal('1')  # Assuming initial shares owned
@@ -124,7 +124,7 @@ def calculate_cumulative_return(ticker, overall_data, days):
             ex_date = dividend['ex_date'].date()
             payment_date = dividend['payment_date'].date()
             # Check if the ex-date is within the required period
-            if (ex_date > n_days_ago_date and ex_date <= current_date):
+            if date_n_days_ago < ex_date <= date_today:
                 # Find price at payment date
                 pay_price = next((item for item in ticker_data if
                                   datetime.fromtimestamp(item['datetime'] / 1000).date() == payment_date), None)
@@ -160,6 +160,8 @@ def get_dividends(ticker):
                 'payment_date': datetime.strptime(dividend.pay_date, date_format),
                 'amount': Decimal(str(dividend.cash_amount))
             })
+
+    logger.info(output)
 
     return output
 
