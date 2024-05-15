@@ -124,6 +124,7 @@ def calculate_cumulative_return(ticker, overall_data, days):
             ex_date = dividend['ex_date'].date()
             payment_date = dividend['payment_date'].date()
             # Check if the ex-date is within the required period
+            print(date_n_days_ago, ex_date, date_today)
             if date_n_days_ago < ex_date <= date_today:
                 # Find price at payment date
                 pay_price = next((item for item in ticker_data if
