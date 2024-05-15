@@ -102,7 +102,7 @@ def calculate_cumulative_return(ticker, overall_data, days):
     ticker_data = overall_data[ticker]
 
     # Sort the data by datetime in ascending order
-    ticker_data.sort(key=lambda x: x['datetime'])
+    ticker_data.sort(key=lambda x: x['datetime'], reverse=True)
 
     print(
         f"Starting date {datetime.fromtimestamp(ticker_data[0]['datetime'] / 1000).date()} ending date {datetime.fromtimestamp(ticker_data[-1]['datetime'] / 1000).date()}")
