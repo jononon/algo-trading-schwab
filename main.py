@@ -128,6 +128,8 @@ def calculate_cumulative_return(ticker, overall_data, days):
                 # Find price at payment date
                 pay_price = next((item for item in ticker_data if
                                   datetime.fromtimestamp(item['datetime'] / 1000).date() == payment_date), None)
+
+                print(f"Pay Price: {pay_price}")
                 if pay_price:
                     pay_price = Decimal(str(pay_price['close']))
                     additional_shares = (shares_owned * Decimal(str(dividend['amount']))) / Decimal(str(pay_price))
