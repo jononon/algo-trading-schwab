@@ -278,9 +278,9 @@ def determine_desired_positions(stocks: list[str], amount_to_spend: Decimal):
 
     logger.info(f"Initial allocation: {desired_positions}")
 
-    best_desired_positions, _ = allocate_remaining_amount(current_quotes, desired_positions, amount_to_spend - amount_spent)
-
-    desired_positions = best_desired_positions
+    # best_desired_positions, _ = allocate_remaining_amount(current_quotes, desired_positions, amount_to_spend - amount_spent)
+    #
+    # desired_positions = best_desired_positions
 
     logger.info(f"After allocating remaining amount: {desired_positions}")
 
