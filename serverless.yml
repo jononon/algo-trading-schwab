@@ -39,6 +39,16 @@ functions:
           rate:
             - cron(30 9 ? * MON-FRI *)
           timezone: America/New_York
+  cancel-orders:
+    handler: main.cancel_orders
+    timeout: 900 # 15 minutes
+    maximumRetryAttempts: 0
+    events:
+      - schedule:
+          method: scheduler
+          rate:
+            - cron(15 9 ? * MON-FRI *)
+          timezone: America/New_York
   auth:
     handler: auth.auth_handler
     events:

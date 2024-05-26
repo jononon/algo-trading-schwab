@@ -425,6 +425,18 @@ def run():
         raise Exception("Errors occurred in one or more threads")
 
 
+def cancel_orders():
+    logger.info(f"Cancelling all orders")
+
+    portfolios = get_all_portfolios()
+
+    for portfolio in portfolios:
+
+        account_hash = portfolio["accountHash"]
+
+        cancel_outstanding_orders(account_hash)
+
+
 def request_handler(event, lambda_context):
     logger.info(f"Event: {event}")
     logger.info(f"Lambda context: {lambda_context} ")
