@@ -1,10 +1,14 @@
 import json
 import base64
+import logging
 import time
 import os
 import requests
 from ssm import get_secret, put_secret
 from datetime import datetime, timedelta
+
+logger = logging.getLogger()
+logger.setLevel("INFO")
 
 BASE_URL = "https://api.schwabapi.com"
 REDIRECT_URI = 'https://schwab.jonathandamico.me/callback'
@@ -171,8 +175,8 @@ def place_limit_order(account_hash: str, symbol: str, quantity: int, limit_price
         location_parts = location.split("/")
         return location_parts[-1]
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        logger.error(f"Error: {response.status_code}")
+        logger.error(response.text)
         response.raise_for_status()
 
 
@@ -212,8 +216,8 @@ def place_market_order(account_hash: str, symbol: str, quantity: int, instructio
         location_parts = location.split("/")
         return location_parts[-1]
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        logger.error(f"Error: {response.status_code}")
+        logger.error(response.text)
         response.raise_for_status()
 
 
@@ -261,8 +265,8 @@ def place_trailing_stop_order(account_hash: str, symbol: str, quantity: int, per
         location_parts = location.split("/")
         return location_parts[-1]
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        logger.error(f"Error: {response.status_code}")
+        logger.error(response.text)
         response.raise_for_status()
 
 
