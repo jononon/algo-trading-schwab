@@ -166,12 +166,14 @@ def place_limit_order(account_hash: str, symbol: str, quantity: int, limit_price
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    response.raise_for_status()
-
-    location = response.headers.get("Location")
-    location_parts = location.split("/")
-
-    return location_parts[-1]
+    if 200 <= response.status_code < 300:
+        location = response.headers.get("Location")
+        location_parts = location.split("/")
+        return location_parts[-1]
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        response.raise_for_status()
 
 
 def place_market_order(account_hash: str, symbol: str, quantity: int, instruction: str):
@@ -205,12 +207,14 @@ def place_market_order(account_hash: str, symbol: str, quantity: int, instructio
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    response.raise_for_status()
-
-    location = response.headers.get("Location")
-    location_parts = location.split("/")
-
-    return location_parts[-1]
+    if 200 <= response.status_code < 300:
+        location = response.headers.get("Location")
+        location_parts = location.split("/")
+        return location_parts[-1]
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        response.raise_for_status()
 
 
 def place_trailing_stop_order(account_hash: str, symbol: str, quantity: int, percentage: float, instruction: str):
@@ -252,12 +256,14 @@ def place_trailing_stop_order(account_hash: str, symbol: str, quantity: int, per
 
     response = requests.request("POST", url, headers=headers, data=payload)
 
-    response.raise_for_status()
-
-    location = response.headers.get("Location")
-    location_parts = location.split("/")
-
-    return location_parts[-1]
+    if 200 <= response.status_code < 300:
+        location = response.headers.get("Location")
+        location_parts = location.split("/")
+        return location_parts[-1]
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        response.raise_for_status()
 
 
 def get_orders(account_hash: str, from_time: str, to_time: str):
