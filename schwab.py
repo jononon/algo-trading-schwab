@@ -5,7 +5,7 @@ import time
 import os
 import requests
 from ssm import get_secret, put_secret
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -224,7 +224,7 @@ def place_market_order(account_hash: str, symbol: str, quantity: int, instructio
 def place_trailing_stop_order(account_hash: str, symbol: str, quantity: int, percentage: float, instruction: str):
     url = f"{BASE_URL}/trader/v1/accounts/{account_hash}/orders"
 
-    cancel_time = datetime.utcnow() + timedelta(weeks=1)
+    cancel_time = datetime.now(UTC) + timedelta(weeks=1)
 
     headers = {
         'Content-Type': 'application/json',
@@ -234,7 +234,7 @@ def place_trailing_stop_order(account_hash: str, symbol: str, quantity: int, per
         "session": "NORMAL",
         "duration": "GOOD_TILL_CANCEL",
         "orderType": "TRAILING_STOP",
-        "cancelTime": cancel_time.strftime('%Y-%m-%dT%H:%M:%S%z').replace(':', ''),
+        "cancelTime": cancel_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
         "complexOrderStrategyType": "NONE",
         "quantity": quantity,
         "stopPriceLinkBasis": "MARK",

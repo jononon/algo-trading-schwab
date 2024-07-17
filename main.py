@@ -3,7 +3,7 @@ import copy
 import logging
 import time
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from decimal import Decimal
 from polygon import RESTClient
 
@@ -175,7 +175,7 @@ def format_time_schwab(time_obj):
 def cancel_outstanding_orders(account_hash: str):
     logger.info(f"Cancelling outstanding orders in account {account_hash}")
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     past = now - timedelta(days=2)
 
     from_time = format_time_schwab(past)
