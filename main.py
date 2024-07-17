@@ -400,7 +400,9 @@ def run_for_portfolio(current_portfolio, desired_stocks):
 
     store_portfolio(current_portfolio)
 
-    for symbol, quantity in current_portfolio["positions"]:
+    for symbol in current_portfolio["positions"]:
+        quantity = current_portfolio["positions"][symbol]
+
         if int(quantity) > 0:
             place_trailing_stop_order(account_hash, symbol, int(quantity), 0.5, "SELL")
 
