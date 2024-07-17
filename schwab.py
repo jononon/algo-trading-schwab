@@ -234,7 +234,7 @@ def place_trailing_stop_order(account_hash: str, symbol: str, quantity: int, per
         "session": "NORMAL",
         "duration": "GOOD_TILL_CANCEL",
         "orderType": "TRAILING_STOP",
-        "cancelTime": cancel_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+        "cancelTime": cancel_time.strftime('%Y-%m-%dT%H:%M:%S%z').replace(':', ''),
         "complexOrderStrategyType": "NONE",
         "quantity": quantity,
         "stopPriceLinkBasis": "MARK",
