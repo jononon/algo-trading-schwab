@@ -4,6 +4,7 @@ import time
 import os
 import requests
 from ssm import get_secret, put_secret
+from datetime import datetime, timedelta
 
 BASE_URL = "https://api.schwabapi.com"
 REDIRECT_URI = 'https://schwab.jonathandamico.me/callback'
@@ -185,6 +186,53 @@ def place_market_order(account_hash: str, symbol: str, quantity: int, instructio
         "orderType": "MARKET",
         "complexOrderStrategyType": "NONE",
         "quantity": quantity,
+        "orderLegCollection": [
+            {
+                "orderLegType": "EQUITY",
+                "legId": 1,
+                "instrument": {
+                    "assetType": "EQUITY",
+                    "symbol": symbol
+                },
+                "instruction": instruction,
+                "positionEffect": "CLOSING",
+                "quantity": quantity
+            }
+        ],
+        "orderStrategyType": "SINGLE",
+        "taxLotMethod": "LOSS_HARVESTER"
+    })
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    response.raise_for_status()
+
+    location = response.headers.get("Location")
+    location_parts = location.split("/")
+
+    return location_parts[-1]
+
+
+def place_trailing_stop_order(account_hash: str, symbol: str, quantity: int, percentage: float, instruction: str):
+    url = f"{BASE_URL}/trader/v1/accounts/{account_hash}/orders"
+
+    cancel_time = datetime.now() + timedelta(weeks=1)
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {get_access_token()}'
+    }
+    payload = json.dumps({
+        "session": "NORMAL",
+        "duration": "GOOD_TILL_CANCEL",
+        "orderType": "TRAILING_STOP",
+        "cancelTime": cancel_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+        "complexOrderStrategyType": "NONE",
+        "quantity": quantity,
+        "stopPriceLinkBasis": "MARK",
+        "stopPriceLinkType": "PERCENT",
+        "stopPriceOffset": percentage,
+        "stopType": "MARK",
         "orderLegCollection": [
             {
                 "orderLegType": "EQUITY",

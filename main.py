@@ -8,7 +8,8 @@ from decimal import Decimal
 from polygon import RESTClient
 
 from dynamodb import store_portfolio, get_all_portfolios
-from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order, get_account
+from schwab import get_price_history, get_orders, cancel_order, get_current_quotes, place_market_order, get_order, \
+    get_account, place_trailing_stop_order
 from ssm import get_secret
 
 logger = logging.getLogger()
@@ -398,6 +399,10 @@ def run_for_portfolio(current_portfolio, desired_stocks):
     logger.info(f"New portfolio: {current_portfolio}")
 
     store_portfolio(current_portfolio)
+
+    for symbol, quantity in current_portfolio["positions"]:
+        if int(quantity) > 0:
+            place_trailing_stop_order(account_hash, symbol, int(quantity), 0.5, "SELL")
 
 
 def run():
