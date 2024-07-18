@@ -3,6 +3,7 @@ import copy
 import logging
 import time
 import traceback
+import pandas as pd
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from polygon import RESTClient
@@ -342,6 +343,43 @@ def get_excecuted_order_value(order_details):
     return value
 
 
+def get_n_business_days_ago(n):
+    # Get today's date
+    today = datetime.today().date()
+
+    # Generate a range of business days up to today
+    business_days = pd.date_range(end=today, periods=n + 5, freq='B')
+
+    # Get the date n business days ago
+    date_n_business_days_ago = business_days[-n - 1].date()
+
+    return date_n_business_days_ago
+
+
+def get_day_trades_left(roundtrips):
+    trades_left = 3
+
+    lookback_date = get_n_business_days_ago(4)
+
+    for day, trades in roundtrips.items():
+        date = datetime.strptime(day, '%Y-%m-%d').date()
+
+        if date >= lookback_date:
+            trades_left -= int(trades)
+
+    return trades_left
+
+def set_current_day_roundtrips(current_portfolio, account_info):
+    today = datetime.today().date()
+
+    # Serialize today's date to a string
+    today_str = today.strftime('%Y-%m-%d')
+
+    current_portfolio["roundtrips"][today_str] = Decimal(str(account_info["securitiesAccount"]["roundTrips"]))
+
+    return current_portfolio
+
+
 def run_for_portfolio(current_portfolio, desired_stocks):
     account_hash = current_portfolio["accountHash"]
 
@@ -355,6 +393,8 @@ def run_for_portfolio(current_portfolio, desired_stocks):
         current_positions[position["instrument"]["symbol"]] = Decimal(str(position["longQuantity"]))
 
     current_portfolio["positions"] = current_positions
+
+    current_portfolio = set_current_day_roundtrips(current_portfolio, account_info)
 
     logger.info(f"Current portfolio: {current_portfolio}")
 
@@ -406,12 +446,15 @@ def run_for_portfolio(current_portfolio, desired_stocks):
 
     store_portfolio(current_portfolio)
 
+    day_trades_left = get_day_trades_left(current_portfolio["roundtrips"])
+
     for symbol in current_portfolio["positions"]:
         quantity = current_portfolio["positions"][symbol]
 
-        if int(quantity) > 0:
+        if int(quantity) > 0 and day_trades_left > 0:
             place_trailing_stop_order(account_hash, symbol, int(quantity), 0.5, "SELL")
 
+            day_trades_left -= 1
 
 def run():
     logger.info(f"Starting bot")
@@ -449,6 +492,21 @@ def cancel_orders():
 
         cancel_outstanding_orders(account_hash)
 
+def update_roundtrips():
+    logger.info("Updating roundtrips")
+
+    portfolios = get_all_portfolios()
+
+    for portfolio in portfolios:
+
+        account_hash = portfolio["accountHash"]
+
+        account_info = get_account(account_hash)
+
+        current_portfolio = set_current_day_roundtrips(current_portfolio, account_info)
+
+        store_portfolio(current_portfolio)
+
 
 def request_handler(event, lambda_context):
     logger.info(f"Event: {event}")
@@ -476,6 +534,31 @@ def request_handler(event, lambda_context):
 
 
 def cancel_orders_handler(event, lambda_context):
+    logger.info(f"Event: {event}")
+    logger.info(f"Lambda context: {lambda_context} ")
+
+    try:
+        cancel_orders()
+
+        response = {
+            "statusCode": 200,
+        }
+
+        return response
+
+    except Exception as e:
+        logger.error(traceback.format_exc())
+
+        response = {
+            "statusCode": 500,
+            "error": e,
+            "trace": traceback.format_exc()
+        }
+
+        return response
+
+
+def update_roundtrips_handler(event, lambda_context):
     logger.info(f"Event: {event}")
     logger.info(f"Lambda context: {lambda_context} ")
 
