@@ -461,6 +461,8 @@ def run_for_portfolio(current_portfolio, desired_stocks):
 
     day_trades_left = get_day_trades_left(current_portfolio["roundtrips"])
 
+    logger.info(f"Day trades left: {day_trades_left}")
+
     for symbol in current_portfolio["positions"]:
         quantity = current_portfolio["positions"][symbol]
 
