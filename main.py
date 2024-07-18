@@ -18,6 +18,8 @@ logger.setLevel("INFO")
 
 client = RESTClient(api_key=get_secret("/algotrading/polygon/apikey"))
 
+TRAILING_STOP_PERCENTAGE = 0.75
+
 def create_strategy():
     data = {
         "AGG": get_price_history("AGG"),
@@ -463,7 +465,7 @@ def run_for_portfolio(current_portfolio, desired_stocks):
         quantity = current_portfolio["positions"][symbol]
 
         if int(quantity) > 0 and day_trades_left > 0:
-            place_trailing_stop_order(account_hash, symbol, int(quantity), 0.5, "SELL")
+            place_trailing_stop_order(account_hash, symbol, int(quantity), TRAILING_STOP_PERCENTAGE, "SELL")
 
             day_trades_left -= 1
 
