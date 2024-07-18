@@ -511,7 +511,7 @@ def update_roundtrips():
 
         account_info = get_account(account_hash)
 
-        current_portfolio = set_current_day_roundtrips(current_portfolio, account_info)
+        current_portfolio = set_current_day_roundtrips(portfolio, account_info)
 
         store_portfolio(current_portfolio)
 
