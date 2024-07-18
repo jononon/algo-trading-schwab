@@ -18,7 +18,7 @@ logger.setLevel("INFO")
 
 client = RESTClient(api_key=get_secret("/algotrading/polygon/apikey"))
 
-TRAILING_STOP_PERCENTAGE = 0.75
+TRAILING_STOP_PERCENTAGE = 1.25
 
 def create_strategy():
     data = {
