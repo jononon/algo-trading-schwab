@@ -3,7 +3,7 @@ import copy
 import logging
 import time
 import traceback
-import pandas as pd
+from workalendar.usa import UnitedStates
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from polygon import RESTClient
@@ -347,13 +347,20 @@ def get_n_business_days_ago(n):
     # Get today's date
     today = datetime.today().date()
 
-    # Generate a range of business days up to today
-    business_days = pd.date_range(end=today, periods=n + 5, freq='B')
+    # Initialize the work calendar for the United States
+    cal = UnitedStates()
 
-    # Get the date n business days ago
-    date_n_business_days_ago = business_days[-n - 1].date()
+    # Counter for business days
+    business_days_count = 0
 
-    return date_n_business_days_ago
+    # Calculate the date by going back day by day, skipping weekends and holidays
+    current_date = today
+    while business_days_count < n:
+        current_date -= timedelta(days=1)
+        if cal.is_working_day(current_date):
+            business_days_count += 1
+
+    return current_date
 
 
 def get_day_trades_left(roundtrips):

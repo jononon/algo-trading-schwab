@@ -2,11 +2,14 @@ boto3==1.34.82
 botocore==1.34.82
 certifi==2024.2.2
 charset-normalizer==3.3.2
+convertdate==2.4.0
 idna==3.6
 jmespath==1.0.1
+lunardate==0.2.2
 numpy==2.0.0
-pandas==2.2.2
 polygon-api-client==1.13.7
+pyluach==2.2.0
+PyMeeus==0.5.12
 python-dateutil==2.9.0.post0
 pytz==2024.1
 requests==2.31.0
@@ -15,3 +18,4 @@ six==1.16.0
 tzdata==2024.1
 urllib3==1.26.18
 websockets==12.0
+workalendar==17.0.0
