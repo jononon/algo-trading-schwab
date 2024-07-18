@@ -399,8 +399,9 @@ def run_for_portfolio(current_portfolio, desired_stocks):
     current_portfolio["cash"] = Decimal(str(account_info["securitiesAccount"]["currentBalances"]["availableFunds"]))
 
     current_positions = {}
-    for position in account_info["securitiesAccount"]["positions"]:
-        current_positions[position["instrument"]["symbol"]] = Decimal(str(position["longQuantity"]))
+    if "positions" in account_info["securitiesAccount"]:
+        for position in account_info["securitiesAccount"]["positions"]:
+            current_positions[position["instrument"]["symbol"]] = Decimal(str(position["longQuantity"]))
 
     current_portfolio["positions"] = current_positions
 
