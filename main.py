@@ -499,6 +499,7 @@ def cancel_orders():
 
         cancel_outstanding_orders(account_hash)
 
+
 def update_roundtrips():
     logger.info("Updating roundtrips")
 
@@ -570,7 +571,7 @@ def update_roundtrips_handler(event, lambda_context):
     logger.info(f"Lambda context: {lambda_context} ")
 
     try:
-        cancel_orders()
+        update_roundtrips()
 
         response = {
             "statusCode": 200,
