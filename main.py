@@ -382,6 +382,9 @@ def set_current_day_roundtrips(current_portfolio, account_info):
     # Serialize today's date to a string
     today_str = today.strftime('%Y-%m-%d')
 
+    if 'roundtrips' not in current_portfolio:
+        current_portfolio["roundtrips"] = {}
+
     current_portfolio["roundtrips"][today_str] = Decimal(str(account_info["securitiesAccount"]["roundTrips"]))
 
     return current_portfolio
