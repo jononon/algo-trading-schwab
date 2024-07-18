@@ -469,7 +469,8 @@ def run_for_portfolio(current_portfolio, desired_stocks):
         if int(quantity) > 0 and (symbol in buy_positions.keys() and day_trades_left > 0):
             place_trailing_stop_order(account_hash, symbol, int(quantity), TRAILING_STOP_PERCENTAGE, "SELL")
 
-            day_trades_left -= 1
+            if symbol in buy_positions.keys():
+                day_trades_left -= 1
 
 def run():
     logger.info(f"Starting bot")
