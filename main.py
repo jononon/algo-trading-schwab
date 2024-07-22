@@ -466,7 +466,7 @@ def run_for_portfolio(current_portfolio, desired_stocks):
     for symbol in current_portfolio["positions"]:
         quantity = current_portfolio["positions"][symbol]
 
-        if int(quantity) > 0 and (symbol in buy_positions.keys() and buy_positions[symbol] > 0 and day_trades_left > 0):
+        if int(quantity) > 0 and (symbol not in buy_positions.keys() or (symbol in buy_positions.keys() and day_trades_left > 0)):
             place_trailing_stop_order(account_hash, symbol, int(quantity), TRAILING_STOP_PERCENTAGE, "SELL")
 
             if symbol in buy_positions.keys():
