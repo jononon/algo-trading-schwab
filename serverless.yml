@@ -49,16 +49,6 @@ functions:
           rate:
             - cron(15 9 ? * MON-FRI *)
           timezone: America/New_York
-  update-roundtrips:
-    handler: main.update_roundtrips_handler
-    timeout: 900 # 15 minutes
-    maximumRetryAttempts: 0
-    events:
-      - schedule:
-          method: scheduler
-          rate:
-            - cron(15 16 ? * MON-FRI *)
-          timezone: America/New_York
   auth:
     handler: auth.auth_handler
     events:

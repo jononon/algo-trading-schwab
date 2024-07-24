@@ -365,33 +365,6 @@ def get_n_business_days_ago(n):
     return current_date
 
 
-def get_day_trades_left(roundtrips):
-    trades_left = 3
-
-    lookback_date = get_n_business_days_ago(4)
-
-    for day, trades in roundtrips.items():
-        date = datetime.strptime(day, '%Y-%m-%d').date()
-
-        if date >= lookback_date:
-            trades_left -= int(trades)
-
-    return trades_left
-
-def set_current_day_roundtrips(current_portfolio, account_info):
-    today = datetime.today().date()
-
-    # Serialize today's date to a string
-    today_str = today.strftime('%Y-%m-%d')
-
-    if 'roundtrips' not in current_portfolio:
-        current_portfolio["roundtrips"] = {}
-
-    current_portfolio["roundtrips"][today_str] = Decimal(str(account_info["securitiesAccount"]["roundTrips"]))
-
-    return current_portfolio
-
-
 def run_for_portfolio(current_portfolio, desired_stocks):
     account_hash = current_portfolio["accountHash"]
 
@@ -406,8 +379,6 @@ def run_for_portfolio(current_portfolio, desired_stocks):
             current_positions[position["instrument"]["symbol"]] = Decimal(str(position["longQuantity"]))
 
     current_portfolio["positions"] = current_positions
-
-    current_portfolio = set_current_day_roundtrips(current_portfolio, account_info)
 
     logger.info(f"Current portfolio: {current_portfolio}")
 
@@ -459,7 +430,7 @@ def run_for_portfolio(current_portfolio, desired_stocks):
 
     store_portfolio(current_portfolio)
 
-    day_trades_left = get_day_trades_left(current_portfolio["roundtrips"])
+    day_trades_left = 3 - account_info["securitiesAccount"]["roundTrips"]
 
     logger.info(f"Day trades left: {day_trades_left}")
 
@@ -509,22 +480,6 @@ def cancel_orders():
         cancel_outstanding_orders(account_hash)
 
 
-def update_roundtrips():
-    logger.info("Updating roundtrips")
-
-    portfolios = get_all_portfolios()
-
-    for portfolio in portfolios:
-
-        account_hash = portfolio["accountHash"]
-
-        account_info = get_account(account_hash)
-
-        current_portfolio = set_current_day_roundtrips(portfolio, account_info)
-
-        store_portfolio(current_portfolio)
-
-
 def request_handler(event, lambda_context):
     logger.info(f"Event: {event}")
     logger.info(f"Lambda context: {lambda_context} ")
@@ -556,31 +511,6 @@ def cancel_orders_handler(event, lambda_context):
 
     try:
         cancel_orders()
-
-        response = {
-            "statusCode": 200,
-        }
-
-        return response
-
-    except Exception as e:
-        logger.error(traceback.format_exc())
-
-        response = {
-            "statusCode": 500,
-            "error": e,
-            "trace": traceback.format_exc()
-        }
-
-        return response
-
-
-def update_roundtrips_handler(event, lambda_context):
-    logger.info(f"Event: {event}")
-    logger.info(f"Lambda context: {lambda_context} ")
-
-    try:
-        update_roundtrips()
 
         response = {
             "statusCode": 200,
